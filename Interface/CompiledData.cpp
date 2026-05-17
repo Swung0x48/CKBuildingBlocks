@@ -42,24 +42,24 @@ void CompiledTextData::PrepareStructure()
 void CompiledTextData::ClearStructure()
 {
 #if CKVERSION == 0x13022002 || CKVERSION == 0x05082002
-	delete[] m_DrawPrimData.PositionPtr;
-	delete[] m_DrawPrimData.NormalPtr;
-	delete[] m_DrawPrimData.ColorPtr;
-	delete[] m_DrawPrimData.SpecularColorPtr;
-	delete[] m_DrawPrimData.TexCoordPtr;
+	delete[] static_cast<CKBYTE *>(m_DrawPrimData.PositionPtr);
+	delete[] static_cast<CKBYTE *>(m_DrawPrimData.NormalPtr);
+	delete[] static_cast<CKBYTE *>(m_DrawPrimData.ColorPtr);
+	delete[] static_cast<CKBYTE *>(m_DrawPrimData.SpecularColorPtr);
+	delete[] static_cast<CKBYTE *>(m_DrawPrimData.TexCoordPtr);
 	for (int i = 0; i < CKRST_MAX_STAGES - 1; ++i)
 	{
-		delete[] m_DrawPrimData.TexCoordPtrs[i];
+		delete[] static_cast<CKBYTE *>(m_DrawPrimData.TexCoordPtrs[i]);
 	}
 #else
-	delete[] m_DrawPrimData.Positions.Ptr;
-	delete[] m_DrawPrimData.Normals.Ptr;
-	delete[] m_DrawPrimData.Colors.Ptr;
-	delete[] m_DrawPrimData.SpecularColors.Ptr;
-	delete[] m_DrawPrimData.TexCoord.Ptr;
+	delete[] static_cast<CKBYTE *>(m_DrawPrimData.Positions.Ptr);
+	delete[] static_cast<CKBYTE *>(m_DrawPrimData.Normals.Ptr);
+	delete[] static_cast<CKBYTE *>(m_DrawPrimData.Colors.Ptr);
+	delete[] static_cast<CKBYTE *>(m_DrawPrimData.SpecularColors.Ptr);
+	delete[] static_cast<CKBYTE *>(m_DrawPrimData.TexCoord.Ptr);
 	for (int i = 0; i < CKRST_MAX_STAGES - 1; ++i)
 	{
-		delete[] m_DrawPrimData.TexCoords[i].Ptr;
+		delete[] static_cast<CKBYTE *>(m_DrawPrimData.TexCoords[i].Ptr);
 	}
 #endif
 
@@ -84,67 +84,67 @@ void CompiledTextData::ExtendStructure(int nc)
 #if CKVERSION == 0x13022002 || CKVERSION == 0x05082002
 	temp = new CKBYTE[newCapacity * sizeof(CKDWORD)];
 	memcpy(temp, m_DrawPrimData.ColorPtr, oldcount * sizeof(CKDWORD));
-	delete[] m_DrawPrimData.ColorPtr;
+	delete[] static_cast<CKBYTE *>(m_DrawPrimData.ColorPtr);
 	m_DrawPrimData.ColorPtr = temp;
 
 	temp = new CKBYTE[newCapacity * sizeof(CKDWORD)];
 	memcpy(temp, m_DrawPrimData.SpecularColorPtr, oldcount * sizeof(CKDWORD));
-	delete[] m_DrawPrimData.SpecularColorPtr;
+	delete[] static_cast<CKBYTE *>(m_DrawPrimData.SpecularColorPtr);
 	m_DrawPrimData.SpecularColorPtr = temp;
 
 	temp = new CKBYTE[newCapacity * sizeof(VxVector)];
 	memcpy(temp, m_DrawPrimData.NormalPtr, oldcount * sizeof(VxVector));
-	delete[] m_DrawPrimData.NormalPtr;
+	delete[] static_cast<CKBYTE *>(m_DrawPrimData.NormalPtr);
 	m_DrawPrimData.NormalPtr = temp;
 
 	temp = new CKBYTE[newCapacity * sizeof(VxVector4)];
 	memcpy(temp, m_DrawPrimData.PositionPtr, oldcount * sizeof(VxVector4));
-	delete[] m_DrawPrimData.PositionPtr;
+	delete[] static_cast<CKBYTE *>(m_DrawPrimData.PositionPtr);
 	m_DrawPrimData.PositionPtr = temp;
 
 	temp = new CKBYTE[newCapacity * sizeof(VxUV)];
 	memcpy(temp, m_DrawPrimData.TexCoordPtr, oldcount * sizeof(VxUV));
-	delete[] m_DrawPrimData.TexCoordPtr;
+	delete[] static_cast<CKBYTE *>(m_DrawPrimData.TexCoordPtr);
 	m_DrawPrimData.TexCoordPtr = temp;
 
 	for (int i = 0; i < CKRST_MAX_STAGES - 1; ++i)
 	{
 		temp = new CKBYTE[newCapacity * sizeof(VxUV)];
 		memcpy(temp, m_DrawPrimData.TexCoordPtrs[i], oldcount * sizeof(VxUV));
-		delete[] m_DrawPrimData.TexCoordPtrs[i];
+		delete[] static_cast<CKBYTE *>(m_DrawPrimData.TexCoordPtrs[i]);
 		m_DrawPrimData.TexCoordPtrs[i] = temp;
 	}
 #else
 	temp = new CKBYTE[newCapacity * sizeof(CKDWORD)];
 	memcpy(temp, m_DrawPrimData.Colors.Ptr, oldcount * sizeof(CKDWORD));
-	delete[] m_DrawPrimData.Colors.Ptr;
+	delete[] static_cast<CKBYTE *>(m_DrawPrimData.Colors.Ptr);
 	m_DrawPrimData.Colors.Ptr = temp;
 
 	temp = new CKBYTE[newCapacity * sizeof(CKDWORD)];
 	memcpy(temp, m_DrawPrimData.SpecularColors.Ptr, oldcount * sizeof(CKDWORD));
-	delete[] m_DrawPrimData.SpecularColors.Ptr;
+	delete[] static_cast<CKBYTE *>(m_DrawPrimData.SpecularColors.Ptr);
 	m_DrawPrimData.SpecularColors.Ptr = temp;
 
 	temp = new CKBYTE[newCapacity * sizeof(VxVector)];
 	memcpy(temp, m_DrawPrimData.Normals.Ptr, oldcount * sizeof(VxVector));
-	delete[] m_DrawPrimData.Normals.Ptr;
+	delete[] static_cast<CKBYTE *>(m_DrawPrimData.Normals.Ptr);
 	m_DrawPrimData.Normals.Ptr = temp;
 
 	temp = new CKBYTE[newCapacity * sizeof(VxVector4)];
 	memcpy(temp, m_DrawPrimData.Positions.Ptr, oldcount * sizeof(VxVector4));
-	delete[] m_DrawPrimData.Positions.Ptr;
+	delete[] static_cast<CKBYTE *>(m_DrawPrimData.Positions.Ptr);
 	m_DrawPrimData.Positions.Ptr = temp;
 
 	temp = new CKBYTE[newCapacity * sizeof(VxUV)];
 	memcpy(temp, m_DrawPrimData.TexCoord.Ptr, oldcount * sizeof(VxUV));
-	delete[] m_DrawPrimData.TexCoord.Ptr;
+	delete[] static_cast<CKBYTE *>(m_DrawPrimData.TexCoord.Ptr);
 	m_DrawPrimData.TexCoord.Ptr = temp;
 
 	for (int i = 0; i < CKRST_MAX_STAGES - 1; ++i)
 	{
 		temp = new CKBYTE[newCapacity * sizeof(VxUV)];
 		memcpy(temp, m_DrawPrimData.TexCoords[i].Ptr, oldcount * sizeof(VxUV));
-		delete[] m_DrawPrimData.TexCoords[i].Ptr;
+		delete[] static_cast<CKBYTE *>(m_DrawPrimData.TexCoords[i].Ptr);
 		m_DrawPrimData.TexCoords[i].Ptr = temp;
 	}
 #endif
