@@ -91,7 +91,7 @@ int ArraySearch(const CKBehaviorContext &behcontext)
     beh->GetInputParameterValue(2, &op);
 
     // we find the key
-    CKUINTPTR key = NULL;
+    CKUINTPTR key = 0;
     int size = GetInputValue(array, beh, column, 3, key);
 
     // the getting itself

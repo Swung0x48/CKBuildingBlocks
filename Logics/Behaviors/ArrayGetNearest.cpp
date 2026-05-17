@@ -82,7 +82,7 @@ int ArrayGetNearest(const CKBehaviorContext &behcontext)
     int column = 0;
     beh->GetInputParameterValue(0, &column);
 
-    CKUINTPTR key = NULL;
+    CKUINTPTR key = 0;
 
     // we find the key
     int size = GetInputValue(array, beh, column, 1, key);

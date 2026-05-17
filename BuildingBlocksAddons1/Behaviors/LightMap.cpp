@@ -445,7 +445,7 @@ CKERROR LightMapCallBackObject(const CKBehaviorContext &behcontext)
         // First we get the lightmap generator
         LightmapGenerator *lg = new LightmapGenerator(behcontext.Context);
         beh->SetLocalParameterValue(0, &lg);
-#endif;
+#endif
     }
     break;
     case CKM_BEHAVIORSETTINGSEDITED:

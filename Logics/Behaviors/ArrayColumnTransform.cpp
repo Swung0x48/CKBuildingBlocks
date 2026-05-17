@@ -78,7 +78,7 @@ int ArrayColumnTransform(const CKBehaviorContext &behcontext)
     beh->GetInputParameterValue(1, &op);
 
     // we find the key
-    CKUINTPTR key = NULL;
+    CKUINTPTR key = 0;
     int size = GetInputValue(array, beh, column, 2, key);
 
     // the transformation itself

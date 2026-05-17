@@ -807,7 +807,7 @@ CKBOOL CollisionManager::IsHierarchyInCollisionWithHierarchy(CK3dEntity *ent1, C
         ent1 = ((CKCharacter *)ent1)->GetRootBodyPart();
         // Character has no root : we can't detect collision thus....
         if (!ent1)
-            return NULL;
+            return FALSE;
     }
 
     // if the hierarchy is a character, we go down to the root immediatly...
@@ -816,13 +816,13 @@ CKBOOL CollisionManager::IsHierarchyInCollisionWithHierarchy(CK3dEntity *ent1, C
         ent2 = ((CKCharacter *)ent2)->GetRootBodyPart();
         // Character has no root : we can't detect collision thus....
         if (!ent2)
-            return NULL;
+            return FALSE;
     }
 
     // hierarchical rejection with world hierarchical box
     if (!BoxBoxIntersection(ent1, TRUE, FALSE, ent2, TRUE, FALSE))
     {
-        return NULL;
+        return FALSE;
     }
 
     // if we arrived here, we know there could be a collision with the root and the other hierarchy

@@ -47,7 +47,7 @@ void NearestPointGrid::SetGridDimensions(const int sizeX, const int sizeY, const
     m_SizeXYZ = m_SizeXY * m_SizeZ;
 
     m_Grid.Resize(m_SizeXYZ);
-    m_Grid.Memset(NULL);
+    m_Grid.Memset(0);
 }
 
 //--- Add Point
