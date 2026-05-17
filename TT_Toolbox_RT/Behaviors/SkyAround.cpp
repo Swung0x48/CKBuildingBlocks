@@ -57,6 +57,12 @@ static void SetSkyAroundPlanarUv(CKMesh *mesh, int index, float x, float z)
     mesh->SetVertexTextureCoordinates(index, u, v);
 }
 
+static void SetSkyAroundVertexPosition(CKMesh *mesh, int index, float x, float y, float z)
+{
+    VxVector position(x, y, z);
+    mesh->SetVertexPosition(index, &position);
+}
+
 #define PIN_DISTORTION 0
 #define PIN_FILTERING_COLOR 1
 #define PIN_ADDITIONAL_COLOR 2
@@ -253,10 +259,10 @@ static CK3dEntity *CreateSkyAroundCube(const CKBehaviorContext &behcontext)
         float x1 = cosf(angle1) * radius;
         float z1 = sinf(angle1) * radius;
 
-        mesh->SetVertexPosition(vertexIndex + 0, &VxVector(x0, bottomY, z0));
-        mesh->SetVertexPosition(vertexIndex + 1, &VxVector(x1, bottomY, z1));
-        mesh->SetVertexPosition(vertexIndex + 2, &VxVector(x1, topY, z1));
-        mesh->SetVertexPosition(vertexIndex + 3, &VxVector(x0, topY, z0));
+        SetSkyAroundVertexPosition(mesh, vertexIndex + 0, x0, bottomY, z0);
+        SetSkyAroundVertexPosition(mesh, vertexIndex + 1, x1, bottomY, z1);
+        SetSkyAroundVertexPosition(mesh, vertexIndex + 2, x1, topY, z1);
+        SetSkyAroundVertexPosition(mesh, vertexIndex + 3, x0, topY, z0);
 
         mesh->SetVertexTextureCoordinates(vertexIndex + 0, 1.0f, 1.0f);
         mesh->SetVertexTextureCoordinates(vertexIndex + 1, 0.0f, 1.0f);
@@ -282,9 +288,9 @@ static CK3dEntity *CreateSkyAroundCube(const CKBehaviorContext &behcontext)
 
         if (topMaterial)
         {
-            mesh->SetVertexPosition(vertexIndex + 0, &VxVector(x0, topY, z0));
-            mesh->SetVertexPosition(vertexIndex + 1, &VxVector(x1, topY, z1));
-            mesh->SetVertexPosition(vertexIndex + 2, &VxVector(0.0f, topY, 0.0f));
+            SetSkyAroundVertexPosition(mesh, vertexIndex + 0, x0, topY, z0);
+            SetSkyAroundVertexPosition(mesh, vertexIndex + 1, x1, topY, z1);
+            SetSkyAroundVertexPosition(mesh, vertexIndex + 2, 0.0f, topY, 0.0f);
 
             SetSkyAroundPlanarUv(mesh, vertexIndex + 0, x0, z0);
             SetSkyAroundPlanarUv(mesh, vertexIndex + 1, x1, z1);
@@ -308,9 +314,9 @@ static CK3dEntity *CreateSkyAroundCube(const CKBehaviorContext &behcontext)
 
         if (bottomMaterial)
         {
-            mesh->SetVertexPosition(vertexIndex + 0, &VxVector(x0, bottomY, z0));
-            mesh->SetVertexPosition(vertexIndex + 1, &VxVector(0.0f, bottomY, 0.0f));
-            mesh->SetVertexPosition(vertexIndex + 2, &VxVector(x1, bottomY, z1));
+            SetSkyAroundVertexPosition(mesh, vertexIndex + 0, x0, bottomY, z0);
+            SetSkyAroundVertexPosition(mesh, vertexIndex + 1, 0.0f, bottomY, 0.0f);
+            SetSkyAroundVertexPosition(mesh, vertexIndex + 2, x1, bottomY, z1);
 
             SetSkyAroundPlanarUv(mesh, vertexIndex + 0, x0, z0);
             mesh->SetVertexTextureCoordinates(vertexIndex + 1, 0.5f, 0.5f);
