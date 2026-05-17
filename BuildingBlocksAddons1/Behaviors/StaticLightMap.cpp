@@ -8,7 +8,7 @@
 #include "CKAll.h"
 #include "TextureProcessing.h"
 #include "assert.h"
-#include "LightMapGenerator.h"
+#include "LightmapGenerator.h"
 
 CKObjectDeclaration *FillBehaviorStaticLightMapDecl();
 CKERROR CreateStaticLightMapProto(CKBehaviorPrototype **);

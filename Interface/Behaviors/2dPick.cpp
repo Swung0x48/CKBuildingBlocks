@@ -5,7 +5,7 @@
 //
 /////////////////////////////////////////////////////
 /////////////////////////////////////////////////////
-#include "CKALL.h"
+#include "CKAll.h"
 
 CKObjectDeclaration *FillBehaviorPicking2dDecl();
 CKERROR CreatePicking2dProto(CKBehaviorPrototype **);

@@ -5,7 +5,7 @@
 //
 /////////////////////////////////////////////////////
 /////////////////////////////////////////////////////
-#include "CKALL.h"
+#include "CKAll.h"
 #include "CKMidiSound.h"
 
 CKERROR CreateMidiPlayerBehaviorProto(CKBehaviorPrototype **pproto);

@@ -6,7 +6,7 @@
 #include "CKAll.h"
 #include "MidiManager.h"
 
-#include "MidiSound/MidiSound.h"
+#include "MidiSound/midisound.h"
 
 // Constructor
 MidiManager::MidiManager(CKContext *ctx):CKMidiManager(ctx,"Midi Manager")

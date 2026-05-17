@@ -5,7 +5,7 @@
 //
 /////////////////////////////////////////////////////
 /////////////////////////////////////////////////////
-#include "CKALl.h"
+#include "CKAll.h"
 
 CKERROR CreateSetFaceBehaviorProto(CKBehaviorPrototype **);
 int SetFace(const CKBehaviorContext &behcontext);
