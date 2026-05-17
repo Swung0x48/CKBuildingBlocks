@@ -5,6 +5,7 @@
 #include "CKAll.h"
 #include "FloorManager.h"
 
+#include <math.h>
 #include <float.h>
 
 extern const char *FloorManagerName;
@@ -639,9 +640,9 @@ CKBOOL FloorManager::FloorFastRejection(CK3dEntity *mov, const VxVector &pos, fl
 
 CK_FLOORNEAREST FloorManager::GetNearestFloors(const VxVector &iPosition, CKFloorPoint *oFP, CK3dEntity *iExcludeFloor)
 {
-    if (_isnan(iPosition.x) ||
-        _isnan(iPosition.y) ||
-        _isnan(iPosition.z))
+    if (isnan(iPosition.x) ||
+        isnan(iPosition.y) ||
+        isnan(iPosition.z))
         return CKFLOOR_NOFLOOR;
 
     oFP->Clear();
@@ -1283,7 +1284,7 @@ CKBOOL FloorManager::ConstrainToFloor(const VxVector &iPosition, float iRadius, 
     { // we are over a floor
 
         // get the floor
-        CK_ID floorID = NULL;
+        CK_ID floorID = 0;
         switch (fn)
         {
         case CKFLOOR_DOWN:
@@ -1307,7 +1308,7 @@ CKBOOL FloorManager::ConstrainToFloor(const VxVector &iPosition, float iRadius, 
 
                 // we are over a floor
                 // get the floor
-                CK_ID floorID = NULL;
+                CK_ID floorID = 0;
                 switch (fn)
                 {
                 case CKFLOOR_DOWN:
