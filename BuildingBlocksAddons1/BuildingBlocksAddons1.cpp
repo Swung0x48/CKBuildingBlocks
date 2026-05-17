@@ -48,8 +48,8 @@ PLUGIN_EXPORT int CKGetPluginInfoCount()
 void ShadowStencilAttributeCallback(int AttribType, CKBOOL Set, CKBeObject *obj, void *arg);
 void ShadowStencilMeshAttributeCallback(int AttribType, CKBOOL Set, CKBeObject *obj, void *arg);
 
-extern const char *shadowStencilCasterAttributeName = "Shadow Stencil Caster";
-extern const char *shadowStencilCasterMeshAttributeName = "SSCMesh";
+const char *shadowStencilCasterAttributeName = "Shadow Stencil Caster";
+const char *shadowStencilCasterMeshAttributeName = "SSCMesh";
 
 CKERROR InitInstance(CKContext *context)
 {
