@@ -12,7 +12,7 @@ public:
     // Constructor
     ParticleEmitter(CKContext *ctx, CK_ID entity, const char *name);
     // Destructor
-    ~ParticleEmitter();
+    virtual ~ParticleEmitter();
 
     // initialize the pool
     void InitParticleSystem();

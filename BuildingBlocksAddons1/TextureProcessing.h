@@ -33,7 +33,7 @@ extern int CMDecalTR[3][3];
 
 void ConvolveTexture3x3(CKTexture *texture, int kernel[3][3], int scale);
 
-#if defined(_M_IX86) || defined(_M_X64) || defined(_M_ARM64) || defined(_M_ARM64EC) || defined(__i386__)
+#if defined(_M_IX86) || defined(_M_X64) || defined(_M_ARM64) || defined(_M_ARM64EC) || defined(__i386__) || defined(__x86_64__) || defined(__aarch64__)
 void ConvolvePaddedPixels3x3(const CKDWORD *paddedSource,
                              CKDWORD *destination,
                              int width,

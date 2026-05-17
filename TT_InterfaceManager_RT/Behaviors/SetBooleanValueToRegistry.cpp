@@ -53,7 +53,7 @@ int SetBooleanValueToRegistry(const CKBehaviorContext &behcontext)
     CKBehavior *beh = behcontext.Behavior;
     CKContext *context = behcontext.Context;
 
-    BOOL value;
+    CKBOOL value;
     char regKey[512];
     char valueName[128];
     beh->GetInputParameterValue(0, &value);
