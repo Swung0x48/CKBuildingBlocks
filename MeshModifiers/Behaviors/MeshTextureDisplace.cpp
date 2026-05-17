@@ -283,7 +283,7 @@ int TextureDisplace(const CKBehaviorContext &behcontext)
     // if not in prelit mode, we calculate the vertice normals
     if (NormalRecalculation)
     {
-        if (mesh->GetLitMode() != VXMESH_PRELITMODE)
+        if (mesh->GetLitMode() != VX_PRELITMESH)
             mesh->BuildNormals();
         else
             // calculate the face normals
