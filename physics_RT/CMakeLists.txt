@@ -12,5 +12,5 @@ ckbb_add_module(physics_RT
                 PhysicsContact.cpp
                 PhysicsContact.h
                 ${BEHAVIORS_SRCS}
-        LINKS ivp_physics ivp_controller ivp_compact_builder
+        LINKS ivp_controller ivp_compact_builder
 )
