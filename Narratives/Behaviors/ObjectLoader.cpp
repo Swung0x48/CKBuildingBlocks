@@ -133,8 +133,8 @@ int ObjectLoader(const CKBehaviorContext &behcontext)
 
         // We load the file
         XString filename(fname);
-        behcontext.Context->GetPathManager()->ResolveFileName(filename, DATA_PATH_IDX, -1);
-        if (ctx->Load(filename.Str(), array, loadoptions) != CK_OK)
+        if (behcontext.Context->GetPathManager()->ResolveFileName(filename, DATA_PATH_IDX, -1) != CK_OK ||
+            ctx->Load(filename.Str(), array, loadoptions) != CK_OK)
         {
             DeleteCKObjectArray(array);
             beh->ActivateOutput(2);
