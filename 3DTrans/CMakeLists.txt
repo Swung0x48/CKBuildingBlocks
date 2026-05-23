@@ -24,6 +24,9 @@ set(QHULL_R_SOURCES
         ${QHULL_R_DIR}/userprintf_rbox_r.c
 )
 add_library(qhullstatic_r STATIC ${QHULL_R_SOURCES})
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set_target_properties(qhullstatic_r PROPERTIES POSITION_INDEPENDENT_CODE ON)
+endif ()
 # Expose qhull/src so consumers use #include "libqhull_r/libqhull_r.h" etc.
 target_include_directories(qhullstatic_r PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/qhull/src)
 
