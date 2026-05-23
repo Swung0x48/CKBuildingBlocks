@@ -3011,6 +3011,13 @@ CKBOOL CKFontManager::RegenerateFontEnumeration()
 		}
 	}
 
+	CKStbSystemFontFace arialFace;
+	if (seen.Find(XString("arial")) == seen.End() &&
+		CKStbFindBestFontFace(faces, "Arial", 400, FALSE, arialFace))
+	{
+		array.PushBack(XString("Arial"));
+	}
+
 	array.Sort();
 
 	XString newEnum;
