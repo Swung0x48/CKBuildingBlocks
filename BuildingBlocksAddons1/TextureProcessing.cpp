@@ -296,10 +296,10 @@ void SwapPixelBuffers(CKDWORD *first, CKDWORD *second, CKDWORD pixelCount)
     CKDWORD i = 0;
     for (; i + 3 < pixelCount; i += 4)
     {
-        simde__m128i a = simde_mm_loadu_si128(reinterpret_cast<const simde__m128i *>(first + i));
-        simde__m128i b = simde_mm_loadu_si128(reinterpret_cast<const simde__m128i *>(second + i));
-        simde_mm_storeu_si128(reinterpret_cast<simde__m128i *>(first + i), b);
-        simde_mm_storeu_si128(reinterpret_cast<simde__m128i *>(second + i), a);
+        __m128i a = _mm_loadu_si128(reinterpret_cast<const __m128i *>(first + i));
+        __m128i b = _mm_loadu_si128(reinterpret_cast<const __m128i *>(second + i));
+        _mm_storeu_si128(reinterpret_cast<__m128i *>(first + i), b);
+        _mm_storeu_si128(reinterpret_cast<__m128i *>(second + i), a);
     }
     for (; i < pixelCount; ++i)
     {
