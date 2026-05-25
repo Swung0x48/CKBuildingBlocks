@@ -66,6 +66,7 @@ int PushButton2(const CKBehaviorContext &behcontext)
         return CKBR_OWNERERROR;
 
     int state = 0;
+    CKBOOL receivedOnInput = FALSE;
 
     if (beh->IsInputActive(0))
     {
@@ -73,6 +74,7 @@ int PushButton2(const CKBehaviorContext &behcontext)
         beh->SetLocalParameterValue(0, &state);
         CKBOOL mouseDown = FALSE;
         beh->SetLocalParameterValue(1, &mouseDown);
+        receivedOnInput = TRUE;
     }
 
     if (beh->IsInputActive(1))
@@ -107,6 +109,12 @@ int PushButton2(const CKBehaviorContext &behcontext)
         state |= 1;
 
     const CKBOOL mouseDown = im->IsMouseButtonDown(CK_MOUSEBUTTON_LEFT);
+    if (receivedOnInput && mouseDown)
+    {
+        oldMouseDown = TRUE;
+        beh->SetLocalParameterValue(1, &oldMouseDown);
+    }
+
     if (mouseDown)
     {
         if (!oldMouseDown)
