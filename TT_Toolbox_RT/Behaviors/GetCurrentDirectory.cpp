@@ -7,7 +7,6 @@
 //////////////////////////////////////////
 #include "CKAll.h"
 #include "ToolboxGuids.h"
-#include "VxWindowFunctions.h"
 
 CKObjectDeclaration *FillBehaviorGetCurrentDirectoryDecl();
 CKERROR CreateGetCurrentDirectoryProto(CKBehaviorPrototype **pproto);
@@ -50,10 +49,9 @@ CKERROR CreateGetCurrentDirectoryProto(CKBehaviorPrototype **pproto)
 int GetCurrentDirectory(const CKBehaviorContext &behcontext)
 {
     CKBehavior *beh = behcontext.Behavior;
-    char buffer[_MAX_PATH] = {0};
-    XBOOL success = VxGetCurrentDirectory(buffer);
-    beh->SetOutputParameterValue(0, buffer, (int)strlen(buffer) + 1);
-    if (success)
+    XString path = VxGetCurrentDirectory();
+    beh->SetOutputParameterValue(0, path.CStr(), path.Length() + 1);
+    if (path.Length() > 0)
     {
         beh->ActivateOutput(0, TRUE);
     }
