@@ -94,7 +94,7 @@ int ReplacePath(const CKBehaviorContext &behcontext)
         return CKBR_OK;
     }
 
-    XString pathName(_MAX_PATH);
+    XString pathName;
     CKBOOL replaced = FALSE;
     for (int pathIdx = 0; pathIdx < pathCount; ++pathIdx)
     {

@@ -417,6 +417,18 @@ struct FontScanContext
     int depth;
 };
 
+static XString MakeFontChildPath(const XString &directory, const char *name)
+{
+    XString path(directory);
+    if (path.Length() > 0) {
+        char last = path.CStr()[path.Length() - 1];
+        if (last != '/' && last != '\\')
+            path << "/";
+    }
+    path << name;
+    return path;
+}
+
 static void ScanFontDirectory(const XString &directory,
                               XClassArray<CKStbSystemFontFace> &faces,
                               XClassArray<XString> &visitedFiles,
@@ -428,17 +440,14 @@ static XBOOL ScanFontDirectoryEntry(const VxDirectoryEntry *entry, void *userDat
     if (!entry || !context)
         return FALSE;
 
-    char fullPath[_MAX_PATH];
-    if (!VxMakePath(fullPath, context->directory.CStr(), entry->Name))
-        return TRUE;
+    XString path = MakeFontChildPath(context->directory, entry->Name.CStr());
 
     if (entry->IsDirectory)
     {
-        ScanFontDirectory(fullPath, *context->faces, *context->visitedFiles, context->depth + 1);
+        ScanFontDirectory(path, *context->faces, *context->visitedFiles, context->depth + 1);
         return TRUE;
     }
 
-    XString path(fullPath);
     if (!HasFontExtension(path.CStr()))
         return TRUE;
     if (context->visitedFiles->Find(path) != context->visitedFiles->End())

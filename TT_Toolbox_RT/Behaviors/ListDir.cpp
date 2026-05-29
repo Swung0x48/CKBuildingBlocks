@@ -20,7 +20,7 @@ static XBOOL AddListDirEntry(const VxDirectoryEntry *entry, void *userData)
         return FALSE;
     array->InsertRow(-1);
     int row = array->GetRowCount() - 1;
-    if (!array->SetElementStringValue(row, 0, entry->Name))
+    if (!array->SetElementStringValue(row, 0, entry->Name.CStr()))
         array->RemoveRow(row);
     return TRUE;
 }
@@ -73,24 +73,23 @@ int ListDir(const CKBehaviorContext &behcontext)
         return CKBR_GENERICERROR;
     }
 
-    char dir[_MAX_PATH] = {0};
-    char mask[_MAX_PATH] = {0};
     const char *slash = strrchr(searchPath, '/');
     const char *backslash = strrchr(searchPath, '\\');
-    const char *separator = slash > backslash ? slash : backslash;
+    const char *separator = slash;
+    if (!separator || (backslash && backslash > separator))
+        separator = backslash;
+
+    XString dir;
+    XString mask;
     if (separator) {
-        size_t dirLen = (size_t)(separator - searchPath);
-        if (dirLen >= sizeof(dir))
-            return CKBR_GENERICERROR;
-        strncpy(dir, searchPath, dirLen);
-        dir[dirLen] = '\0';
-        strncpy(mask, separator + 1, sizeof(mask) - 1);
+        dir = XString(searchPath, (int)(separator - searchPath));
+        mask = separator + 1;
     } else {
-        strcpy(dir, ".");
-        strncpy(mask, searchPath, sizeof(mask) - 1);
+        dir = ".";
+        mask = searchPath;
     }
 
-    if (!VxListDirectory(dir, mask, TRUE, AddListDirEntry, array))
+    if (!VxListDirectory(dir.CStr(), mask.CStr(), TRUE, AddListDirEntry, array))
         return CKBR_GENERICERROR;
 
     return CKBR_OK;
