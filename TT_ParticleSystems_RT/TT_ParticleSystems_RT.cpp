@@ -41,12 +41,34 @@ CKERROR InitInstance(CKContext *context)
     pm->RegisterNewFlags(CKPGUID_DEFLECTORS, "Particle Deflectors Managing", "Plane=1,Infinite Plane=2,Cylinder=4,Sphere=8,Box=16,Object=32,Outputs Impacts=64,Die On Impact=128");
 
     // Interactors Structure
-    pm->RegisterNewStructure(CKPGUID_PARTICLEMUTATION, "Mutation Elements", "Size,SizeSpeed,Color,ColorSpeed", CKPGUID_FLOAT, CKPGUID_FLOAT, CKPGUID_COLOR, CKPGUID_FLOAT);
-    pm->RegisterNewStructure(CKPGUID_PARTICLETUNNEL, "Tunnel Values", "Velocity,Radius,Attraction Shape,Attraction Speed,Attraction Direction", CKPGUID_FLOAT, CKPGUID_FLOAT, CKPGUID_FLOAT, CKPGUID_FLOAT, CKPGUID_FLOAT);
+    XArray<CKGUID> mutationGuids;
+    mutationGuids.PushBack(CKPGUID_FLOAT);
+    mutationGuids.PushBack(CKPGUID_FLOAT);
+    mutationGuids.PushBack(CKPGUID_COLOR);
+    mutationGuids.PushBack(CKPGUID_FLOAT);
+    pm->RegisterNewStructure(CKPGUID_PARTICLEMUTATION, "Mutation Elements", "Size,SizeSpeed,Color,ColorSpeed", mutationGuids);
+
+    XArray<CKGUID> tunnelGuids;
+    tunnelGuids.PushBack(CKPGUID_FLOAT);
+    tunnelGuids.PushBack(CKPGUID_FLOAT);
+    tunnelGuids.PushBack(CKPGUID_FLOAT);
+    tunnelGuids.PushBack(CKPGUID_FLOAT);
+    tunnelGuids.PushBack(CKPGUID_FLOAT);
+    pm->RegisterNewStructure(CKPGUID_PARTICLETUNNEL, "Tunnel Values", "Velocity,Radius,Attraction Shape,Attraction Speed,Attraction Direction", tunnelGuids);
 
     // Deflectors Structure
-    pm->RegisterNewStructure(CKPGUID_PDEFLECTORS, "Deflectors", "Response,Friction,Density", CKPGUID_FLOAT, CKPGUID_FLOAT, CKPGUID_PERCENTAGE);
-    pm->RegisterNewStructure(CKPGUID_PODEFLECTORS, "Deflectors", "Response,Friction,Density,Smoothed Normal", CKPGUID_FLOAT, CKPGUID_FLOAT, CKPGUID_PERCENTAGE, CKPGUID_BOOL);
+    XArray<CKGUID> deflectorGuids;
+    deflectorGuids.PushBack(CKPGUID_FLOAT);
+    deflectorGuids.PushBack(CKPGUID_FLOAT);
+    deflectorGuids.PushBack(CKPGUID_PERCENTAGE);
+    pm->RegisterNewStructure(CKPGUID_PDEFLECTORS, "Deflectors", "Response,Friction,Density", deflectorGuids);
+
+    XArray<CKGUID> objectDeflectorGuids;
+    objectDeflectorGuids.PushBack(CKPGUID_FLOAT);
+    objectDeflectorGuids.PushBack(CKPGUID_FLOAT);
+    objectDeflectorGuids.PushBack(CKPGUID_PERCENTAGE);
+    objectDeflectorGuids.PushBack(CKPGUID_BOOL);
+    pm->RegisterNewStructure(CKPGUID_PODEFLECTORS, "Deflectors", "Response,Friction,Density,Smoothed Normal", objectDeflectorGuids);
 
     // We hide the parameters (structures and flags)
     CKParameterTypeDesc *param_type;

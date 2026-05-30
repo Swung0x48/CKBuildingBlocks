@@ -87,7 +87,10 @@ CKERROR InitInstance(CKContext *context)
         param_type->dwFlags |= CKPARAMETERTYPE_HIDDEN;
 
     // Reflected Objects Structure
-    pm->RegisterNewStructure(CKPGUID_REFLECTED, "", "Group,Mesh", CKPGUID_FILTER, CKPGUID_MESH);
+    XArray<CKGUID> reflectedGuids;
+    reflectedGuids.PushBack(CKPGUID_FILTER);
+    reflectedGuids.PushBack(CKPGUID_MESH);
+    pm->RegisterNewStructure(CKPGUID_REFLECTED, "", "Group,Mesh", reflectedGuids);
     param_type = pm->GetParameterTypeDescription(CKPGUID_REFLECTED);
     if (param_type)
         param_type->dwFlags |= CKPARAMETERTYPE_HIDDEN;

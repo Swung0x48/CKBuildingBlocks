@@ -935,7 +935,11 @@ CKERROR GridManager::OnCKInit()
     ClearData();
     InitData();
     m_Context->GetParameterManager()->RegisterNewEnum(CKPGUID_LAYERTYPE, "Layer Type", "*=1");
-    m_Context->GetParameterManager()->RegisterNewStructure(CKPGUID_PATHFINDINGCOLLISION, "Collision", "Collision Mask,Collision Radius,Avoid Radius", CKPGUID_FILTER, CKPGUID_FLOAT, CKPGUID_FLOAT);
+    XArray<CKGUID> collisionGuids;
+    collisionGuids.PushBack(CKPGUID_FILTER);
+    collisionGuids.PushBack(CKPGUID_FLOAT);
+    collisionGuids.PushBack(CKPGUID_FLOAT);
+    m_Context->GetParameterManager()->RegisterNewStructure(CKPGUID_PATHFINDINGCOLLISION, "Collision", "Collision Mask,Collision Radius,Avoid Radius", collisionGuids);
 
     SetTypeName(1, DEFAULT_LAYER_NAME);
 

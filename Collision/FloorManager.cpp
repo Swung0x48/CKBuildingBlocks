@@ -41,7 +41,13 @@ CKERROR FloorManager::PreClearAll()
 CKERROR FloorManager::OnCKInit()
 {
     m_Context->GetParameterManager()->RegisterNewEnum(CKPGUID_FLOORGEOMETRY, "Geometry", "Faces=0,Bounding Box=1");
-    m_Context->GetParameterManager()->RegisterNewStructure(CKPGUID_FLOOR, "Floor", "Floor Geometry,Moving Floor,Floor Type,Use Hierarchy?,First Contact?", CKPGUID_FLOORGEOMETRY, CKPGUID_BOOL, CKPGUID_INT, CKPGUID_BOOL, CKPGUID_BOOL);
+    XArray<CKGUID> floorGuids;
+    floorGuids.PushBack(CKPGUID_FLOORGEOMETRY);
+    floorGuids.PushBack(CKPGUID_BOOL);
+    floorGuids.PushBack(CKPGUID_INT);
+    floorGuids.PushBack(CKPGUID_BOOL);
+    floorGuids.PushBack(CKPGUID_BOOL);
+    m_Context->GetParameterManager()->RegisterNewStructure(CKPGUID_FLOOR, "Floor", "Floor Geometry,Moving Floor,Floor Type,Use Hierarchy?,First Contact?", floorGuids);
 
     // We create the attributes
     // we register all the attributes types related to the Collision Manager

@@ -39,7 +39,12 @@ CKERROR InitInstance(CKContext *context)
     pm->RegisterNewEnum(CKPGUID_TTAXIS, "Axis", "X=1,Y=2,Z=4,XY=3,XZ=5,YZ=6,XYZ=7");
     pm->RegisterNewEnum(CKPGUID_MAPPING, "Mapping", "Conic=1,Radial=2");
 
-    pm->RegisterNewStructure(CKPGUID_SSHADOW, "SShadow", "Mesh-ID,Static,Shadow-Length,SelfShadow", CKPGUID_INT, CKPGUID_BOOL, CKPGUID_FLOAT, CKPGUID_BOOL);
+    XArray<CKGUID> shadowGuids;
+    shadowGuids.PushBack(CKPGUID_INT);
+    shadowGuids.PushBack(CKPGUID_BOOL);
+    shadowGuids.PushBack(CKPGUID_FLOAT);
+    shadowGuids.PushBack(CKPGUID_BOOL);
+    pm->RegisterNewStructure(CKPGUID_SSHADOW, "SShadow", "Mesh-ID,Static,Shadow-Length,SelfShadow", shadowGuids);
 
     return CK_OK;
 }

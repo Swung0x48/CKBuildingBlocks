@@ -40,7 +40,10 @@ CKERROR CreateCollisionManager(CKContext *context)
     CKParameterManager *pm = context->GetParameterManager();
     pm->RegisterNewEnum(CKPGUID_OBSTACLEPRECISION, "Geometry Precision", "BoundingBox=1,Faces=2");
     pm->RegisterNewEnum(CKPGUID_OBSTACLEPRECISIONBEH, "Geometry Precision (Behavioral)", "Automatic=0,BoundingBox=1,Faces=2");
-    pm->RegisterNewStructure(CKPGUID_OBSTACLE, "Obstacle", "Obstacle Type,Use Hierarchy?", CKPGUID_OBSTACLEPRECISION, CKPGUID_BOOL);
+    XArray<CKGUID> obstacleGuids;
+    obstacleGuids.PushBack(CKPGUID_OBSTACLEPRECISION);
+    obstacleGuids.PushBack(CKPGUID_BOOL);
+    pm->RegisterNewStructure(CKPGUID_OBSTACLE, "Obstacle", "Obstacle Type,Use Hierarchy?", obstacleGuids);
 
     CKParameterTypeDesc *param_type;
     param_type = pm->GetParameterTypeDescription(CKPGUID_OBSTACLEPRECISION);

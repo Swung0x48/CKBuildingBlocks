@@ -146,13 +146,19 @@ int GetSpecialParameterInfo(const CKBehaviorContext &behcontext)
 
                     CKGUID guid = pm->ParameterTypeToGuid(a);
 
-#ifdef __GNUC__
-                    CKGUID ck_o = CKPGUID_OBSTACLEPRECISION;
-                    CKGUID ck_b = CKPGUID_BOOL;
-                    pm->RegisterNewStructure(CKPGUID_OBSTACLE, "Obstacle", "Obstacle Type,Use Hierarchy?", &ck_o, &ck_b);
-#else
-                    pm->RegisterNewStructure(CKPGUID_OBSTACLE, "Obstacle", "Obstacle Type,Use Hierarchy?", CKPGUID_OBSTACLEPRECISION, CKPGUID_BOOL);
-#endif
+                    XArray<CKGUID> obstacleGuids;
+                    obstacleGuids.PushBack(CKPGUID_OBSTACLEPRECISION);
+                    obstacleGuids.PushBack(CKPGUID_BOOL);
+                    pm->RegisterNewStructure(CKPGUID_OBSTACLE, "Obstacle", "Obstacle Type,Use Hierarchy?", obstacleGuids);
+
+                    fprintf(file, "{\n");
+                    fprintf(file, "XArray<CKGUID> guids;\n");
+                    int subParamCount = structStruct->GetNumSubParam();
+                    for (int c = 0; c < subParamCount; ++c)
+                    {
+                        CKGUID subGuid = structStruct->GetSubParamGuid(c);
+                        fprintf(file, "guids.PushBack(CKDEFINEGUID(0x%08x,0x%08x));\n", subGuid.d1, subGuid.d2);
+                    }
                     fprintf(file, "pm->RegisterNewStructure( CKDEFINEGUID(0x%08x,0x%08x), \"%s\", \"", guid.d1, guid.d2, pm->ParameterTypeToName(a));
                     int valueCount = structStruct->GetNumSubParam();
                     for (int b = 0; b < valueCount; ++b)
@@ -163,19 +169,8 @@ int GetSpecialParameterInfo(const CKBehaviorContext &behcontext)
                             fprintf(file, ",");
                         }
                     }
-                    fprintf(file, "\", ");
-
-                    int subParamCount = structStruct->GetNumSubParam();
-                    for (int c = 0; c < valueCount; ++c)
-                    {
-                        CKGUID subGuid = structStruct->GetSubParamGuid(c);
-                        fprintf(file, "CKDEFINEGUID(0x%08x,0x%08x)", subGuid.d1, subGuid.d2);
-                        if (c != subParamCount - 1)
-                        {
-                            fprintf(file, ",");
-                        }
-                    }
-                    fprintf(file, " );\n");
+                    fprintf(file, "\", guids );\n");
+                    fprintf(file, "}\n");
                 }
             }
         }
