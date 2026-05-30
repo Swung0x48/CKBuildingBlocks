@@ -3,6 +3,7 @@
 
 #include "CKBaseManager.h"
 #include "CKContext.h"
+#include "XString.h"
 
 #include "GameInfo.h"
 #include "NemoArray.h"
@@ -43,7 +44,17 @@ struct TTPlayerCommand
     int type;
     int param0;
     int param1;
-    const char *text;
+    XString text;
+
+    TTPlayerCommand()
+        : type(0), param0(0), param1(0), text()
+    {
+    }
+
+    TTPlayerCommand(int commandType, int commandParam0 = 0, int commandParam1 = 0, const char *commandText = NULL)
+        : type(commandType), param0(commandParam0), param1(commandParam1), text(commandText ? commandText : "")
+    {
+    }
 };
 
 class InterfaceManager;
@@ -170,7 +181,7 @@ public:
 
     int SendPlayerCommand(int type, int param0 = 0, int param1 = 0, const char *text = NULL)
     {
-        TTPlayerCommand command = {type, param0, param1, text};
+        TTPlayerCommand command(type, param0, param1, text);
         return SendPlayerCommand(command);
     }
 
@@ -186,7 +197,7 @@ public:
 
     int PostPlayerCommand(int type, int param0 = 0, int param1 = 0, const char *text = NULL)
     {
-        TTPlayerCommand command = {type, param0, param1, text};
+        TTPlayerCommand command(type, param0, param1, text);
         return PostPlayerCommand(command);
     }
 

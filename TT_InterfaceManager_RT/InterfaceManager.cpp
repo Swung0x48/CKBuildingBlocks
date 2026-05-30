@@ -18,7 +18,6 @@ InterfaceManager::InterfaceManager(CKContext *context)
 {
     context->RegisterNewManager(this);
     memset(m_CmoName, 0, sizeof(m_CmoName));
-    memset(m_CommandQueue, 0, sizeof(m_CommandQueue));
 }
 
 InterfaceManager::~InterfaceManager() {}
