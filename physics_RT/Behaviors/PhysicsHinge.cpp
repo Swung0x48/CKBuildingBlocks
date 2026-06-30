@@ -83,6 +83,8 @@ public:
             return 1;
 
         CK3dEntity *referential = (CK3dEntity *)beh->GetInputParameterObject(REFERENTIAL);
+        if (!referential)
+            return 1;
 
         CKBOOL limitations = FALSE;
         beh->GetInputParameterValue(LIMITATIONS, &limitations);
@@ -109,14 +111,13 @@ public:
 
         VxVector dir;
         VxVector pos;
-        if (referential)
-        {
-            referential->GetOrientation(&dir, &pos);
-            referential->GetPosition(&pos);
-        }
+        referential->GetOrientation(&dir, &pos);
+        referential->GetPosition(&pos);
 
         IVP_U_Point anchor(pos.x, pos.y, pos.z);
         IVP_U_Point axis(dir.x, dir.y, dir.z);
+        if (axis.quad_length() <= 0.0001f)
+            return 1;
 
         tmpl.set_hinge_ws(objR, &anchor, &axis, objA);
 
@@ -156,6 +157,8 @@ int PhysicsHinge(const CKBehaviorContext &behcontext)
             return CKBR_OWNERERROR;
 
         CKIpionManager *man = CKIpionManager::GetManager(context);
+        if (!man || !man->GetEnvironment() || !man->m_PreSimulateCallbacks)
+            return CKBR_GENERICERROR;
 
         PhysicsHingeCallback *cb = new PhysicsHingeCallback(man, beh);
         man->m_PreSimulateCallbacks->Process(cb);
@@ -184,8 +187,15 @@ CKERROR PhysicsHingeCallBack(const CKBehaviorContext &behcontext)
     if (behcontext.CallbackMessage == CKM_BEHAVIORRESET)
     {
         CKBehavior *beh = behcontext.Behavior;
-        void *handle = NULL;
-        beh->SetLocalParameterValue(0, &handle);
+        IVP_Constraint *constraint = NULL;
+        beh->GetLocalParameterValue(0, &constraint);
+
+        CKIpionManager *man = CKIpionManager::GetManager(behcontext.Context);
+        if (constraint && man && man->GetEnvironment())
+            delete constraint;
+
+        constraint = NULL;
+        beh->SetLocalParameterValue(0, &constraint);
     }
 
     return CKBR_OK;

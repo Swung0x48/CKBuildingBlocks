@@ -132,6 +132,8 @@ int PhysicsBallJoint(const CKBehaviorContext &behcontext)
                 return CKBR_OWNERERROR;
 
             CKIpionManager *man = CKIpionManager::GetManager(context);
+            if (!man || !man->GetEnvironment() || !man->m_PreSimulateCallbacks)
+                return CKBR_GENERICERROR;
 
             PhysicsBallJointCallback *cb = new PhysicsBallJointCallback(man, beh);
             man->m_PreSimulateCallbacks->Process(cb);
@@ -167,8 +169,15 @@ CKERROR PhysicsBallJointCallBack(const CKBehaviorContext &behcontext)
     {
     case CKM_BEHAVIORRESET:
     {
-        void *handle = NULL;
-        beh->SetLocalParameterValue(0, &handle);
+        IVP_Constraint *constraint = NULL;
+        beh->GetLocalParameterValue(0, &constraint);
+
+        CKIpionManager *man = CKIpionManager::GetManager(behcontext.Context);
+        if (constraint && man && man->GetEnvironment())
+            delete constraint;
+
+        constraint = NULL;
+        beh->SetLocalParameterValue(0, &constraint);
         return CKBR_OK;
     }
     case CKM_BEHAVIORSETTINGSEDITED:

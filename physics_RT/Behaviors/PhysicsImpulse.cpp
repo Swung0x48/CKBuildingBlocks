@@ -74,6 +74,8 @@ int PhysicsImpulse(const CKBehaviorContext &behcontext)
         return CKBR_OWNERERROR;
 
     CKIpionManager *man = CKIpionManager::GetManager(context);
+    if (!man || !man->GetEnvironment())
+        return CKBR_GENERICERROR;
 
     CKBOOL twoPosInsteadOfDir = FALSE;
     beh->GetLocalParameterValue(0, &twoPosInsteadOfDir);
@@ -134,7 +136,10 @@ int PhysicsImpulse(const CKBehaviorContext &behcontext)
             vec = direction;
         dir.set(vec.x, vec.y, vec.z);
     }
-    dir.normize();
+    if (dir.quad_length() <= 0.0001f)
+        dir.set(1.0, 0.0, 0.0);
+    else
+        dir.normize();
     dir.mult(impulse);
 
     if (referential == ent)

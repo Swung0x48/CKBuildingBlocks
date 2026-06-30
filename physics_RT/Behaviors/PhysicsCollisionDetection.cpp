@@ -245,6 +245,8 @@ int PhysicsCollDetection(const CKBehaviorContext &behcontext)
                 return CKBR_OWNERERROR;
 
             CKIpionManager *man = CKIpionManager::GetManager(context);
+            if (!man || !man->GetEnvironment() || !man->m_PreSimulateCallbacks)
+                return CKBR_GENERICERROR;
             man->GetPhysicsObject(ent, TRUE);
 
             PhysicsCollDetectionCallback *physicsCall = new PhysicsCollDetectionCallback(man, beh);
@@ -275,8 +277,19 @@ CKERROR PhysicsCollDetectionCallBack(const CKBehaviorContext &behcontext)
     if (behcontext.CallbackMessage == CKM_BEHAVIORRESET)
     {
         CKBehavior *beh = behcontext.Behavior;
-        void *handle = NULL;
-        beh->SetLocalParameterValue(0, &handle);
+        PhysicsCollDetectionListener *listener = NULL;
+        beh->GetLocalParameterValue(0, &listener);
+        CKIpionManager *man = CKIpionManager::GetManager(behcontext.Context);
+        if (listener && man && man->GetEnvironment())
+            delete listener;
+        else
+        {
+            void *handle = NULL;
+            beh->SetLocalParameterValue(0, &handle);
+        }
+
+        listener = NULL;
+        beh->SetLocalParameterValue(0, &listener);
     }
 
     return CKBR_OK;

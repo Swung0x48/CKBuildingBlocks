@@ -181,6 +181,8 @@ int SetPhysicsSpring(const CKBehaviorContext &behcontext)
                 return CKBR_OWNERERROR;
 
             CKIpionManager *man = CKIpionManager::GetManager(context);
+            if (!man || !man->GetEnvironment() || !man->m_PreSimulateCallbacks)
+                return CKBR_GENERICERROR;
 
             PhysicsSpringCall *cb = new PhysicsSpringCall(man, beh);
             man->m_PreSimulateCallbacks->Process(cb);
@@ -210,8 +212,15 @@ CKERROR SetPhysicsSpringCallBack(const CKBehaviorContext &behcontext)
     if (behcontext.CallbackMessage == CKM_BEHAVIORRESET)
     {
         CKBehavior *beh = behcontext.Behavior;
-        void *handle = NULL;
-        beh->SetLocalParameterValue(0, &handle);
+        IVP_Actuator_Spring *spring = NULL;
+        beh->GetLocalParameterValue(0, &spring);
+
+        CKIpionManager *man = CKIpionManager::GetManager(behcontext.Context);
+        if (spring && man && man->GetEnvironment())
+            delete spring;
+
+        spring = NULL;
+        beh->SetLocalParameterValue(0, &spring);
     }
 
     return CKBR_OK;

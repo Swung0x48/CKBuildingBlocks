@@ -201,6 +201,8 @@ int PhysicsForce(const CKBehaviorContext &behcontext)
                 return CKBR_OWNERERROR;
 
             CKIpionManager *man = CKIpionManager::GetManager(context);
+            if (!man || !man->GetEnvironment() || !man->m_PreSimulateCallbacks)
+                return CKBR_GENERICERROR;
 
             PhysicsForceCallback *cb = new PhysicsForceCallback(man, beh);
             man->m_PreSimulateCallbacks->Process(cb);
@@ -230,8 +232,15 @@ CKERROR PhysicsForceCallBack(const CKBehaviorContext &behcontext)
     if (behcontext.CallbackMessage == CKM_BEHAVIORRESET)
     {
         CKBehavior *beh = behcontext.Behavior;
-        void *handle = NULL;
-        beh->SetLocalParameterValue(0, &handle);
+        PhysicsControllerForce *controller = NULL;
+        beh->GetLocalParameterValue(0, &controller);
+
+        CKIpionManager *man = CKIpionManager::GetManager(behcontext.Context);
+        if (controller && man && man->GetEnvironment())
+            delete controller;
+
+        controller = NULL;
+        beh->SetLocalParameterValue(0, &controller);
     }
 
     return CKBR_OK;

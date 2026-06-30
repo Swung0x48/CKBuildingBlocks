@@ -128,7 +128,15 @@ public:
 
         VxVector vec = endPos - startPos;
         IVP_U_Float_Point speed(vec.x, vec.y, vec.z);
-        speed.fast_normize();
+        if (speed.quad_length() > 0.0001f)
+        {
+            speed.fast_normize();
+            speed.mult(strength);
+        }
+        else
+        {
+            speed.set(0.0f, 0.0f, 0.0f);
+        }
 
         float mediumDensity = 998.0f;
         beh->GetInputParameterValue(MEDIUM_DENSITY, &mediumDensity);
@@ -202,6 +210,8 @@ int PhysicsBuoyancy(const CKBehaviorContext &behcontext)
         return CKBR_OWNERERROR;
 
     CKIpionManager *man = CKIpionManager::GetManager(context);
+    if (!man || !man->GetEnvironment() || !man->m_PreSimulateCallbacks)
+        return CKBR_GENERICERROR;
 
     PhysicsBuoyancyCallback *cb = new PhysicsBuoyancyCallback(man, beh);
     man->m_PreSimulateCallbacks->Process(cb);

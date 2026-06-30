@@ -86,6 +86,8 @@ public:
 
         CK3dEntity *axisPoint1 = (CK3dEntity *)beh->GetInputParameterObject(AXIS_POINT1);
         CK3dEntity *axisPoint2 = (CK3dEntity *)beh->GetInputParameterObject(AXIS_POINT2);
+        if (!axisPoint1 || !axisPoint2)
+            return 1;
 
         CKBOOL limitations = FALSE;
         beh->GetInputParameterValue(LIMITATIONS, &limitations);
@@ -113,15 +115,14 @@ public:
         VxVector axisPosition1;
         VxVector axisPosition2;
 
-        if (axisPoint1)
-            axisPoint1->GetPosition(&axisPosition1);
-
-        if (axisPoint2)
-            axisPoint2->GetPosition(&axisPosition2);
+        axisPoint1->GetPosition(&axisPosition1);
+        axisPoint2->GetPosition(&axisPosition2);
 
         IVP_U_Point anchor(axisPosition1.x, axisPosition1.y, axisPosition1.z);
         VxVector ax = axisPosition2 - axisPosition1;
         IVP_U_Point axis(ax.x, ax.y, ax.z);
+        if (axis.quad_length() <= 0.0001f)
+            return 1;
 
         tmpl.set_constraint_ws(objR, &anchor, &axis, 3, 2, objA, NULL);
         tmpl.set_constraint_ws(objR, &anchor, &axis, 2, 3, objA, NULL);
@@ -153,6 +154,8 @@ int SetPhysicsSlider(const CKBehaviorContext &behcontext)
                 return CKBR_OWNERERROR;
 
             CKIpionManager *man = CKIpionManager::GetManager(context);
+            if (!man || !man->GetEnvironment() || !man->m_PreSimulateCallbacks)
+                return CKBR_GENERICERROR;
 
             PhysicsSliderCall *cb = new PhysicsSliderCall(man, beh);
             man->m_PreSimulateCallbacks->Process(cb);
@@ -182,8 +185,15 @@ CKERROR SetPhysicsSliderCallBack(const CKBehaviorContext &behcontext)
     if (behcontext.CallbackMessage == CKM_BEHAVIORRESET)
     {
         CKBehavior *beh = behcontext.Behavior;
-        void *handle = NULL;
-        beh->SetLocalParameterValue(0, &handle);
+        IVP_Constraint *constraint = NULL;
+        beh->GetLocalParameterValue(0, &constraint);
+
+        CKIpionManager *man = CKIpionManager::GetManager(behcontext.Context);
+        if (constraint && man && man->GetEnvironment())
+            delete constraint;
+
+        constraint = NULL;
+        beh->SetLocalParameterValue(0, &constraint);
     }
 
     return CKBR_OK;
