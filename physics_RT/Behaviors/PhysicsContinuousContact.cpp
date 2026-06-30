@@ -203,6 +203,33 @@ private:
     CKIpionManager *m_IpionManager;
 };
 
+static void ClearPhysicsContactData(CKBehavior *beh, CKIpionManager *man, PhysicsContactData *data)
+{
+    if (!beh || !data)
+        return;
+
+    if (man && man->GetEnvironment())
+    {
+        CK3dEntity *ent = (CK3dEntity *)beh->GetTarget();
+        if (ent)
+        {
+            PhysicsObject *po = man->GetPhysicsObject(ent);
+            if (po && po->m_ContactData == data)
+                po->m_ContactData = NULL;
+        }
+    }
+    else
+    {
+        data->m_Listener = NULL;
+        data->m_Manager = NULL;
+    }
+
+    delete data;
+
+    PhysicsContactData *empty = NULL;
+    beh->SetLocalParameterValue(1, &empty);
+}
+
 class PhysicsContinuousContactCallback : public PhysicsCallback
 {
 public:
@@ -268,6 +295,9 @@ int PhysicsContinuousContact(const CKBehaviorContext &behcontext)
             if (!ent)
                 return CKBR_OWNERERROR;
 
+            if (!man || !man->GetEnvironment() || !man->m_PreSimulateCallbacks)
+                return CKBR_GENERICERROR;
+
             PhysicsContinuousContactCallback *cb = new PhysicsContinuousContactCallback(man, beh);
             man->m_PreSimulateCallbacks->Process(cb);
         }
@@ -281,18 +311,7 @@ int PhysicsContinuousContact(const CKBehaviorContext &behcontext)
         beh->GetLocalParameterValue(1, &data);
         if (data)
         {
-            CK3dEntity *ent = (CK3dEntity *)beh->GetTarget();
-            if (ent)
-            {
-                PhysicsObject *po = man->GetPhysicsObject(ent);
-                if (po)
-                {
-                    delete data->m_Listener;
-                    po->m_ContactData = NULL;
-                    data->m_Manager->RemoveRecord(po);
-                    delete data;
-                }
-            }
+            ClearPhysicsContactData(beh, man, data);
         }
 
         beh->ActivateInput(1, FALSE);
@@ -308,6 +327,21 @@ CKERROR PhysicsContinuousContactCallBack(const CKBehaviorContext &behcontext)
 
     if (!beh->GetOwner())
         return CKBR_OWNERERROR;
+
+    if (behcontext.CallbackMessage == CKM_BEHAVIORRESET)
+    {
+        PhysicsContactData *data = NULL;
+        beh->GetLocalParameterValue(1, &data);
+        if (data)
+        {
+            CKIpionManager *man = CKIpionManager::GetManager(behcontext.Context);
+            ClearPhysicsContactData(beh, man, data);
+        }
+
+        void *handle = NULL;
+        beh->SetLocalParameterValue(1, &handle);
+        return CKBR_OK;
+    }
 
     if (behcontext.CallbackMessage == CKM_BEHAVIORSETTINGSEDITED)
     {

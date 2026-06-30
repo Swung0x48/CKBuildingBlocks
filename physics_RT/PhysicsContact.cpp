@@ -153,6 +153,12 @@ PhysicsContactData::PhysicsContactData(float timeDelayStart, float timeDelayEnd,
 
 PhysicsContactData::~PhysicsContactData()
 {
+    if (m_Listener)
+    {
+        delete m_Listener;
+        m_Listener = NULL;
+    }
+
     CKBehavior *beh = m_Behavior;
     if (!beh || !m_Manager || !m_Manager->m_IpionManager)
     {
