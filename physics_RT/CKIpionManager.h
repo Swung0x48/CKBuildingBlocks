@@ -56,6 +56,16 @@ public:
     CK_ID m_Owner;
 };
 
+class PhysicsMaterialOwner
+{
+public:
+    PhysicsMaterialOwner(CK_ID owner = 0, IVP_Material *material = NULL)
+        : m_Owner(owner), m_Material(material) {}
+
+    CK_ID m_Owner;
+    IVP_Material *m_Material;
+};
+
 class PhysicsObject
 {
 public:
@@ -185,6 +195,10 @@ public:
     void DeletePrivateCollisionSurfaces();
     void ClearCollisionSurfaces();
 
+    void OwnMaterial(CK3dEntity *owner, IVP_Material *material);
+    void DeleteMaterial(CK_ID owner);
+    void DeleteMaterials();
+
     void ClearLiquidSurfaces();
 
     void SetupCollisionDetectID();
@@ -212,7 +226,7 @@ public:
 
     IVP_U_Vector<IVP_Real_Object> m_MovableObjects;
     IVP_U_Vector<CK3dEntity> m_Entities;
-    IVP_U_Vector<IVP_Material> m_Materials;
+    IVP_U_Vector<PhysicsMaterialOwner> m_MaterialOwners;
     IVP_U_Vector<IVP_Liquid_Surface_Descriptor_Simple> m_LiquidSurfaces;
     IVP_U_Vector<PhysicsCollisionSurface> m_CollisionSurfaceOwners;
     IVP_U_Vector<PhysicsPrivateCollisionSurface> m_PrivateCollisionSurfaceOwners;

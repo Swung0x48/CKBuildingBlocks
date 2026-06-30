@@ -52,6 +52,8 @@ CKERROR CreatePhysicsBuoyancyProto(CKBehaviorPrototype **pproto)
     proto->DeclareInParameter("Airplane like factor", CKPGUID_FLOAT, "0.0");
     proto->DeclareInParameter("Suction factor", CKPGUID_FLOAT, ".1");
 
+    proto->DeclareLocalParameter("IVP_Handle", CKPGUID_BOOL, "FALSE");
+
     proto->SetFlags(CK_BEHAVIORPROTOTYPE_NORMAL);
     proto->SetFunction(PhysicsBuoyancy);
 
@@ -75,6 +77,8 @@ CKERROR CreatePhysicsBuoyancyProto(CKBehaviorPrototype **pproto)
 #define AIRPLANE_LIKE_FACTOR 10
 #define SUCTION_FACTOR 11
 
+#define INSTALLED 0
+
 class PhysicsBuoyancyCallback : public PhysicsCallback
 {
 public:
@@ -88,6 +92,11 @@ public:
 
         CK3dEntity *ent = (CK3dEntity *)beh->GetTarget();
         if (!ent)
+            return CKBR_ACTIVATENEXTFRAME;
+
+        CKBOOL installed = FALSE;
+        beh->GetLocalParameterValue(INSTALLED, &installed);
+        if (installed)
             return CKBR_ACTIVATENEXTFRAME;
 
         CK3dEntity *surfacePoint1 = (CK3dEntity *)beh->GetInputParameterObject(SURFACE_POINT1);
@@ -123,6 +132,10 @@ public:
         surfacePoint3->GetPosition(&pos3);
         startPoint->GetPosition(&startPos);
         endPoint->GetPosition(&endPos);
+
+        VxVector normal = CrossProduct(pos2 - pos1, pos3 - pos1);
+        if (normal.SquareMagnitude() <= 0.0001f)
+            return CKBR_OK;
 
         IVP_U_Float_Point point1(pos1.x, pos1.y, pos1.z);
         IVP_U_Float_Point point2(pos2.x, pos2.y, pos2.z);
@@ -198,6 +211,9 @@ public:
         IVP_U_Set_Active<IVP_Core> *cores = obj->get_controller_phantom()->get_intruding_cores();
         new IVP_Attacher_To_Cores_Buoyancy(tmpl, cores, descriptor);
 
+        installed = TRUE;
+        beh->SetLocalParameterValue(INSTALLED, &installed);
+
         return CKBR_ACTIVATENEXTFRAME;
     }
 };
@@ -215,9 +231,15 @@ int PhysicsBuoyancy(const CKBehaviorContext &behcontext)
     if (!man || !man->GetEnvironment() || !man->m_PreSimulateCallbacks)
         return CKBR_GENERICERROR;
 
-    PhysicsBuoyancyCallback *cb = new PhysicsBuoyancyCallback(man, beh);
-    man->m_PreSimulateCallbacks->Process(cb);
+    CKBOOL installed = FALSE;
+    beh->GetLocalParameterValue(INSTALLED, &installed);
+    if (!installed)
+    {
+        PhysicsBuoyancyCallback *cb = new PhysicsBuoyancyCallback(man, beh);
+        man->m_PreSimulateCallbacks->Process(cb);
+    }
 
+    beh->ActivateInput(0, FALSE);
     beh->ActivateOutput(0, TRUE);
     return CKBR_OK;
 }
@@ -228,6 +250,14 @@ CKERROR PhysicsBuoyancyCallBack(const CKBehaviorContext &behcontext)
 
     if (!beh->GetOwner())
         return CKBR_OWNERERROR;
+
+    if (behcontext.CallbackMessage == CKM_BEHAVIORRESET ||
+        behcontext.CallbackMessage == CKM_BEHAVIORDELETE ||
+        behcontext.CallbackMessage == CKM_BEHAVIORDETACH)
+    {
+        CKBOOL installed = FALSE;
+        beh->SetLocalParameterValue(INSTALLED, &installed);
+    }
 
     return CKBR_OK;
 }

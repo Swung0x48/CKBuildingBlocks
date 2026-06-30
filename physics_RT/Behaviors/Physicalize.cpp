@@ -192,7 +192,7 @@ int Physicalize(const CKBehaviorContext &behcontext)
                                                        mass, collisionGroup, startFrozen, enableCollision,
                                                        autoCalcMassCenter, linearSpeedDampening, rotSpeedDampening);
         if (ret == CK_OK)
-            man->m_Materials.add(material);
+            man->OwnMaterial(ent, material);
         else
             delete material;
 

@@ -11,6 +11,8 @@
 #include "ivp_surbuild_pointsoup.hxx"
 #include "ivp_surman_polygon.hxx"
 
+#include <stdio.h>
+
 static bool IsPhysicsHandleBehavior(CKGUID guid)
 {
     return guid == CKGUID(0x5e624f0a, 0x35160450) || // Set Physics Ball Joint
@@ -25,6 +27,48 @@ static bool IsPhysicsHandleBehavior(CKGUID guid)
 static bool IsZeroVector(const VxVector &v)
 {
     return fabsf(v.x) <= 0.0001f && fabsf(v.y) <= 0.0001f && fabsf(v.z) <= 0.0001f;
+}
+
+static void BuildCollisionSurfaceKey(char *buffer, int bufferSize, CKSTRING name, VxVector *scale,
+                                     int convexCount, CKMesh **convexes, int concaveCount, CKMesh **concaves)
+{
+    if (!buffer || bufferSize <= 0)
+        return;
+
+    VxVector s = scale ? *scale : VxVector(1.0f, 1.0f, 1.0f);
+    int used = snprintf(buffer, bufferSize, "%s|scale=%.6g,%.6g,%.6g", name ? name : "",
+                        s.x, s.y, s.z);
+    if (used < 0)
+    {
+        buffer[0] = '\0';
+        return;
+    }
+    if (used >= bufferSize)
+        used = bufferSize - 1;
+
+    for (int i = 0; i < convexCount && used < bufferSize - 1; ++i)
+    {
+        CK_ID id = convexes && convexes[i] ? convexes[i]->GetID() : 0;
+        int written = snprintf(buffer + used, bufferSize - used, "|c%d=%u", i, (unsigned int)id);
+        if (written < 0)
+            break;
+        used += written;
+        if (used >= bufferSize)
+            used = bufferSize - 1;
+    }
+
+    for (int j = 0; j < concaveCount && used < bufferSize - 1; ++j)
+    {
+        CK_ID id = concaves && concaves[j] ? concaves[j]->GetID() : 0;
+        int written = snprintf(buffer + used, bufferSize - used, "|n%d=%u", j, (unsigned int)id);
+        if (written < 0)
+            break;
+        used += written;
+        if (used >= bufferSize)
+            used = bufferSize - 1;
+    }
+
+    buffer[bufferSize - 1] = '\0';
 }
 
 static void DeleteCollisionSurfaceOwner(PhysicsCollisionSurface *surface)
@@ -402,6 +446,7 @@ void CKIpionManager::RemovePhysicsObject(CK3dEntity *entity)
     const CK_ID owner = entity->GetID();
     m_PhysicsObjects.Remove(owner);
     DeletePrivateCollisionSurface(owner);
+    DeleteMaterial(owner);
 }
 
 int CKIpionManager::CreatePhysicsObjectOnParameters(CK3dEntity *target, int convexCount, CKMesh **convexes,
@@ -452,7 +497,11 @@ int CKIpionManager::CreatePhysicsObjectOnParameters(CK3dEntity *target, int conv
     }
     else
     {
-        IVP_SurfaceManager *surman = GetCollisionSurface(collisionSurface);
+        char collisionSurfaceKey[512];
+        BuildCollisionSurfaceKey(collisionSurfaceKey, sizeof(collisionSurfaceKey), collisionSurface, &scale,
+                                 convexCount, convexes, concaveCount, concaves);
+
+        IVP_SurfaceManager *surman = GetCollisionSurface(collisionSurfaceKey);
         if (!surman)
         {
             IVP_SurfaceBuilder_Ledge_Soup builder;
@@ -488,7 +537,7 @@ int CKIpionManager::CreatePhysicsObjectOnParameters(CK3dEntity *target, int conv
                 {
                     surman = new IVP_SurfaceManager_Polygon(compactSurface);
                     if (surman)
-                        AddCollisionSurface(collisionSurface, surman, compactSurface);
+                        AddCollisionSurface(collisionSurfaceKey, surman, compactSurface);
                     else
                         ivp_free_aligned(compactSurface);
                 }
@@ -721,12 +770,7 @@ void CKIpionManager::DestroyEnvironment(CKBOOL resetBehaviorHandles)
 
     m_MovableObjects.clear();
 
-    for (int i = m_Materials.len() - 1; i >= 0; --i)
-    {
-        IVP_Material *material = m_Materials.element_at(i);
-        delete material;
-    }
-    m_Materials.clear();
+    DeleteMaterials();
 
     ClearLiquidSurfaces();
 }
@@ -793,6 +837,10 @@ void CKIpionManager::SetDeltaTime(float delta)
 
 void CKIpionManager::SetTimeFactor(float factor)
 {
+    if (!(factor >= 0.0f))
+        factor = 0.0f;
+    if (factor > 10.0f)
+        factor = 10.0f;
     m_PhysicsTimeFactor = factor * 0.001f;
 }
 
@@ -892,6 +940,42 @@ void CKIpionManager::ClearCollisionSurfaces()
     m_CollisionSurfaces = new IVP_U_String_Hash(64);
 }
 
+void CKIpionManager::OwnMaterial(CK3dEntity *owner, IVP_Material *material)
+{
+    if (!owner || !material)
+        return;
+
+    m_MaterialOwners.add(new PhysicsMaterialOwner(owner->GetID(), material));
+}
+
+void CKIpionManager::DeleteMaterial(CK_ID owner)
+{
+    for (int i = m_MaterialOwners.len() - 1; i >= 0; --i)
+    {
+        PhysicsMaterialOwner *owned = m_MaterialOwners.element_at(i);
+        if (owned && owned->m_Owner == owner)
+        {
+            m_MaterialOwners.remove_at(i);
+            delete owned->m_Material;
+            delete owned;
+        }
+    }
+}
+
+void CKIpionManager::DeleteMaterials()
+{
+    for (int i = m_MaterialOwners.len() - 1; i >= 0; --i)
+    {
+        PhysicsMaterialOwner *owned = m_MaterialOwners.element_at(i);
+        m_MaterialOwners.remove_at(i);
+        if (owned)
+        {
+            delete owned->m_Material;
+            delete owned;
+        }
+    }
+}
+
 void CKIpionManager::ClearLiquidSurfaces()
 {
     const int len = m_LiquidSurfaces.len();
@@ -921,7 +1005,7 @@ void CKIpionManager::SetupCollisionDetectID()
         {
             int type = obj->GetAttributeType(i);
             CKSTRING typeName = am->GetAttributeNameByType(type);
-            if (strcmp(typeName, "Coll Detection ID") == 0 && obj->GetAttributeParameter(type) != NULL)
+            if (typeName && strcmp(typeName, "Coll Detection ID") == 0 && obj->GetAttributeParameter(type) != NULL)
             {
                 m_CollDetectionIDAttribType = type;
                 found = true;
