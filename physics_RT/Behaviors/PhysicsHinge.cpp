@@ -72,7 +72,9 @@ public:
 
     virtual int Execute()
     {
-        CKBehavior *beh = m_Behavior;
+        CKBehavior *beh = GetBehavior();
+        if (!beh)
+            return 1;
 
         CK3dEntity *ent = (CK3dEntity *)beh->GetTarget();
         if (!ent)
@@ -129,7 +131,7 @@ public:
         }
 
         IVP_Constraint *constraint = m_IpionManager->CreateConstraint(&tmpl);
-        m_Behavior->SetLocalParameterValue(0, &constraint);
+        beh->SetLocalParameterValue(0, &constraint);
 
         return 1;
     }
@@ -184,7 +186,9 @@ int PhysicsHinge(const CKBehaviorContext &behcontext)
 
 CKERROR PhysicsHingeCallBack(const CKBehaviorContext &behcontext)
 {
-    if (behcontext.CallbackMessage == CKM_BEHAVIORRESET)
+    if (behcontext.CallbackMessage == CKM_BEHAVIORRESET ||
+        behcontext.CallbackMessage == CKM_BEHAVIORDELETE ||
+        behcontext.CallbackMessage == CKM_BEHAVIORDETACH)
     {
         CKBehavior *beh = behcontext.Behavior;
         IVP_Constraint *constraint = NULL;

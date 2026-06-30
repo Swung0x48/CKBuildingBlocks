@@ -70,7 +70,9 @@ public:
 
     virtual int Execute()
     {
-        CKBehavior *beh = m_Behavior;
+        CKBehavior *beh = GetBehavior();
+        if (!beh)
+            return CKBR_ACTIVATENEXTFRAME;
 
         CK3dEntity *ent = (CK3dEntity *)beh->GetTarget();
         if (!ent)
@@ -109,7 +111,7 @@ public:
         tmpl.set_ballsocket_ws(objR, &anchor, objA);
 
         IVP_Constraint *constraint = m_IpionManager->CreateConstraint(&tmpl);
-        m_Behavior->SetLocalParameterValue(0, &constraint);
+        beh->SetLocalParameterValue(0, &constraint);
 
         return CKBR_ACTIVATENEXTFRAME;
     }
@@ -168,6 +170,8 @@ CKERROR PhysicsBallJointCallBack(const CKBehaviorContext &behcontext)
     switch (behcontext.CallbackMessage)
     {
     case CKM_BEHAVIORRESET:
+    case CKM_BEHAVIORDELETE:
+    case CKM_BEHAVIORDETACH:
     {
         IVP_Constraint *constraint = NULL;
         beh->GetLocalParameterValue(0, &constraint);

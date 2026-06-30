@@ -80,7 +80,9 @@ public:
 
     virtual int Execute()
     {
-        CKBehavior *beh = m_Behavior;
+        CKBehavior *beh = GetBehavior();
+        if (!beh)
+            return 1;
 
         CK3dEntity *ent = (CK3dEntity *)beh->GetTarget();
         if (!ent)
@@ -158,7 +160,7 @@ public:
         tmpl.anchors[1] = &anchor2;
 
         IVP_Actuator_Spring *spring = m_IpionManager->CreateSpring(&tmpl);
-        m_Behavior->SetLocalParameterValue(0, &spring);
+        beh->SetLocalParameterValue(0, &spring);
 
         return 1;
     }
@@ -209,7 +211,9 @@ int SetPhysicsSpring(const CKBehaviorContext &behcontext)
 
 CKERROR SetPhysicsSpringCallBack(const CKBehaviorContext &behcontext)
 {
-    if (behcontext.CallbackMessage == CKM_BEHAVIORRESET)
+    if (behcontext.CallbackMessage == CKM_BEHAVIORRESET ||
+        behcontext.CallbackMessage == CKM_BEHAVIORDELETE ||
+        behcontext.CallbackMessage == CKM_BEHAVIORDETACH)
     {
         CKBehavior *beh = behcontext.Behavior;
         IVP_Actuator_Spring *spring = NULL;

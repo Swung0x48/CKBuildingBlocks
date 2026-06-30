@@ -124,7 +124,9 @@ public:
 
     virtual int Execute()
     {
-        CKBehavior *beh = m_Behavior;
+        CKBehavior *beh = GetBehavior();
+        if (!beh)
+            return 1;
 
         CK3dEntity *ent = (CK3dEntity *)beh->GetTarget();
         if (!ent)
@@ -229,7 +231,9 @@ int PhysicsForce(const CKBehaviorContext &behcontext)
 
 CKERROR PhysicsForceCallBack(const CKBehaviorContext &behcontext)
 {
-    if (behcontext.CallbackMessage == CKM_BEHAVIORRESET)
+    if (behcontext.CallbackMessage == CKM_BEHAVIORRESET ||
+        behcontext.CallbackMessage == CKM_BEHAVIORDELETE ||
+        behcontext.CallbackMessage == CKM_BEHAVIORDETACH)
     {
         CKBehavior *beh = behcontext.Behavior;
         PhysicsControllerForce *controller = NULL;

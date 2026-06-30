@@ -11,14 +11,17 @@ class CKIpionManager;
 class PhysicsCallback
 {
 public:
-    PhysicsCallback() : m_IpionManager(NULL), m_Type(0), m_Behavior(NULL) {}
-    PhysicsCallback(CKIpionManager *pm, CKBehavior *beh, int type) : m_IpionManager(pm), m_Type(type), m_Behavior(beh) {}
+    PhysicsCallback() : m_IpionManager(NULL), m_Type(0), m_BehaviorID(0) {}
+    PhysicsCallback(CKIpionManager *pm, CKBehavior *beh, int type)
+        : m_IpionManager(pm), m_Type(type), m_BehaviorID(beh ? beh->GetID() : 0) {}
     virtual int Execute() = 0;
     virtual ~PhysicsCallback(){};
 
+    CKBehavior *GetBehavior() const;
+
     CKIpionManager *m_IpionManager;
     int m_Type;
-    CKBehavior *m_Behavior;
+    CK_ID m_BehaviorID;
 };
 
 class PhysicsCallbackContainer
@@ -28,6 +31,7 @@ public:
     ~PhysicsCallbackContainer();
 
     void Clear();
+    void ClearBehavior(CK_ID behaviorID);
     void Process();
     void Process(PhysicsCallback *pc);
 

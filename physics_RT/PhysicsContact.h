@@ -25,11 +25,13 @@ public:
                        PhysicsContactManager *man, CKBehavior *beh);
     ~PhysicsContactData();
 
+    CKBehavior *GetBehavior() const;
+
     float m_TimeDelayStart;
     float m_TimeDelayEnd;
     int m_GroupOutputCount;
     PhysicsContactManager *m_Manager;
-    CKBehavior *m_Behavior;
+    CK_ID m_BehaviorID;
     GroupOutput *m_GroupOutputs;
     IVP_Listener_Collision *m_Listener;
 };

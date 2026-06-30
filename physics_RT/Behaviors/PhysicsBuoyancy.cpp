@@ -82,7 +82,9 @@ public:
 
     virtual int Execute()
     {
-        CKBehavior *beh = m_Behavior;
+        CKBehavior *beh = GetBehavior();
+        if (!beh)
+            return CKBR_ACTIVATENEXTFRAME;
 
         CK3dEntity *ent = (CK3dEntity *)beh->GetTarget();
         if (!ent)

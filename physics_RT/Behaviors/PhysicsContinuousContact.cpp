@@ -143,8 +143,9 @@ public:
                     contactManager->RemoveRecord(i);
                     data->m_GroupOutputs[index].active = TRUE;
                     const int outputIndex = 2 * index;
-                    if (outputIndex < data->m_Behavior->GetOutputCount())
-                        data->m_Behavior->ActivateOutput(outputIndex, TRUE);
+                    CKBehavior *beh = data->GetBehavior();
+                    if (beh && outputIndex < beh->GetOutputCount())
+                        beh->ActivateOutput(outputIndex, TRUE);
                     activated = true;
                 }
             }
@@ -237,7 +238,9 @@ public:
 
     virtual int Execute()
     {
-        CKBehavior *beh = m_Behavior;
+        CKBehavior *beh = GetBehavior();
+        if (!beh)
+            return 1;
 
         CK3dEntity *ent = (CK3dEntity *)beh->GetTarget();
         if (!ent)
@@ -328,7 +331,9 @@ CKERROR PhysicsContinuousContactCallBack(const CKBehaviorContext &behcontext)
     if (!beh->GetOwner())
         return CKBR_OWNERERROR;
 
-    if (behcontext.CallbackMessage == CKM_BEHAVIORRESET)
+    if (behcontext.CallbackMessage == CKM_BEHAVIORRESET ||
+        behcontext.CallbackMessage == CKM_BEHAVIORDELETE ||
+        behcontext.CallbackMessage == CKM_BEHAVIORDETACH)
     {
         PhysicsContactData *data = NULL;
         beh->GetLocalParameterValue(1, &data);

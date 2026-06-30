@@ -90,7 +90,7 @@ public:
           m_MaxSpeed(maxSpeed),
           m_RealObject(obj),
           m_IpionManager(manager),
-          m_Behavior(beh),
+          m_BehaviorID(beh ? beh->GetID() : 0),
           m_CollisionID(collisionID)
     {
         obj->add_listener_collision(this);
@@ -101,12 +101,32 @@ public:
         if (m_RealObject)
             m_RealObject->remove_listener_collision(this);
 
-        PhysicsCollDetectionListener *listener = NULL;
-        m_Behavior->SetLocalParameterValue(0, &listener);
+        CKBehavior *beh = GetBehavior();
+        if (beh)
+        {
+            PhysicsCollDetectionListener *listener = NULL;
+            beh->SetLocalParameterValue(0, &listener);
+        }
+    }
+
+    CKBehavior *GetBehavior() const
+    {
+        if (!m_IpionManager || !m_IpionManager->m_Context || m_BehaviorID == 0)
+            return NULL;
+
+        CKObject *obj = m_IpionManager->m_Context->GetObject(m_BehaviorID);
+        if (!obj || !CKIsChildClassOf(obj, CKCID_BEHAVIOR))
+            return NULL;
+
+        return (CKBehavior *)obj;
     }
 
     void event_post_collision(IVP_Event_Collision *collision)
     {
+        CKBehavior *beh = GetBehavior();
+        if (!beh)
+            return;
+
         IVP_Contact_Situation *situation = collision->contact_situation;
         IVP_Real_Object *obj = situation->objects[0];
         if (obj == m_RealObject)
@@ -117,7 +137,7 @@ public:
         int collisionID = m_IpionManager->GetCollisionDetectID(ent);
 
         CKBOOL useCollisionID = FALSE;
-        m_Behavior->GetLocalParameterValue(1, &useCollisionID);
+        beh->GetLocalParameterValue(1, &useCollisionID);
         if (useCollisionID && m_CollisionID != collisionID)
             return;
 
@@ -125,7 +145,7 @@ public:
         if (!po)
             return;
 
-        if (m_Behavior->IsOutputActive(0) ||
+        if (beh->IsOutputActive(0) ||
             m_IpionManager->GetSimulationTime() - m_Time < m_SleepAfterwards)
             return;
 
@@ -149,23 +169,23 @@ public:
                 speed = 1.0f;
         }
 
-        m_Behavior->SetOutputParameterObject(ENTITY, ent);
-        m_Behavior->SetOutputParameterValue(SPEED, &speed);
+        beh->SetOutputParameterObject(ENTITY, ent);
+        beh->SetOutputParameterValue(SPEED, &speed);
 
         const float normalSign = (situation->objects[0] != m_RealObject) ? -1.0f : 1.0f;
         VxVector collisionNormalWorld((float)situation->surf_normal.k[0] * normalSign,
                                       (float)situation->surf_normal.k[1] * normalSign,
                                       (float)situation->surf_normal.k[2] * normalSign);
-        m_Behavior->SetOutputParameterValue(COLLISION_NORMAL_WORLD, &collisionNormalWorld);
+        beh->SetOutputParameterValue(COLLISION_NORMAL_WORLD, &collisionNormalWorld);
 
         VxVector positionWorld((float)situation->contact_point_ws.k[0],
                                (float)situation->contact_point_ws.k[1],
                                (float)situation->contact_point_ws.k[2]);
-        m_Behavior->SetOutputParameterValue(POSITION_WORLD, &positionWorld);
+        beh->SetOutputParameterValue(POSITION_WORLD, &positionWorld);
 
         m_Time = m_IpionManager->GetSimulationTime();
 
-        m_Behavior->ActivateOutput(0, TRUE);
+        beh->ActivateOutput(0, TRUE);
     }
 
     void event_collision_object_deleted(IVP_Real_Object *obj)
@@ -183,7 +203,7 @@ public:
     float m_MaxSpeed;
     IVP_Real_Object *m_RealObject;
     CKIpionManager *m_IpionManager;
-    CKBehavior *m_Behavior;
+    CK_ID m_BehaviorID;
     int m_CollisionID;
     int field_2C;
 };
@@ -195,9 +215,11 @@ public:
 
     virtual int Execute()
     {
-        CKBehavior *beh = m_Behavior;
+        CKBehavior *beh = GetBehavior();
+        if (!beh)
+            return 1;
 
-        CK3dEntity *ent = (CK3dEntity *)m_Behavior->GetTarget();
+        CK3dEntity *ent = (CK3dEntity *)beh->GetTarget();
         if (!ent)
             return 1;
 
@@ -220,7 +242,7 @@ public:
         IVP_Real_Object *obj = po->m_RealObject;
 
         PhysicsCollDetectionListener *listener = new PhysicsCollDetectionListener(sleepAfterwards, minSpeed, maxSpeed,
-                                                                                  obj, m_IpionManager, m_Behavior,
+                                                                                  obj, m_IpionManager, beh,
                                                                                   collisionID);
 
         beh->SetLocalParameterValue(0, &listener);
@@ -274,7 +296,9 @@ int PhysicsCollDetection(const CKBehaviorContext &behcontext)
 
 CKERROR PhysicsCollDetectionCallBack(const CKBehaviorContext &behcontext)
 {
-    if (behcontext.CallbackMessage == CKM_BEHAVIORRESET)
+    if (behcontext.CallbackMessage == CKM_BEHAVIORRESET ||
+        behcontext.CallbackMessage == CKM_BEHAVIORDELETE ||
+        behcontext.CallbackMessage == CKM_BEHAVIORDETACH)
     {
         CKBehavior *beh = behcontext.Behavior;
         PhysicsCollDetectionListener *listener = NULL;

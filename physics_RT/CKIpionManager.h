@@ -109,6 +109,8 @@ public:
 
     virtual void Reset();
     void ResetPhysicsBehaviorHandles();
+    void ClearBehaviorCallbacks(CK_ID behaviorID);
+    CKBOOL ProcessPendingReset();
 
     int GetPhysicsObjectCount() const;
     PhysicsObject *GetPhysicsObject(CK3dEntity *entity, CKBOOL logging = FALSE);
@@ -227,6 +229,8 @@ public:
     float m_DeltaTime;
     float m_PhysicsDeltaTime;
     float m_PhysicsTimeFactor;
+    int m_CallbackProcessingDepth;
+    CKBOOL m_ResetRequested;
     int m_HasPhysicsCalls;
     int m_PhysicalizeCalls;
     int m_DePhysicalizeCalls;

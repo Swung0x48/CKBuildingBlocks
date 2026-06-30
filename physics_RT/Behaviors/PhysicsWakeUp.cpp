@@ -54,7 +54,11 @@ public:
 
     virtual int Execute()
     {
-        CK3dEntity *ent = (CK3dEntity *)m_Behavior->GetTarget();
+        CKBehavior *beh = GetBehavior();
+        if (!beh)
+            return 1;
+
+        CK3dEntity *ent = (CK3dEntity *)beh->GetTarget();
         if (!ent)
             return 1;
 

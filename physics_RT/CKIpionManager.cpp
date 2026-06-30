@@ -187,6 +187,8 @@ CKIpionManager::CKIpionManager(CKContext *context)
     m_TimeManager = NULL;
     m_DeltaTime = 0.0f;
     m_PhysicsDeltaTime = 0.0f;
+    m_CallbackProcessingDepth = 0;
+    m_ResetRequested = FALSE;
 
     if (context->RegisterNewManager(this) == CKERR_MANAGERALREADYEXISTS)
         context->OutputToConsole("Manager already exists", TRUE);
@@ -290,6 +292,13 @@ CKERROR CKIpionManager::SequenceToBeDeleted(CK_ID *objids, int count)
                     m_MovableObjects.remove(realObject);
             }
         }
+        else if (CKIsChildClassOf(obj, CKCID_BEHAVIOR))
+        {
+            CKBehavior *beh = (CKBehavior *)obj;
+            ClearBehaviorCallbacks(beh->GetID());
+            if (IsPhysicsHandleBehavior(beh->GetPrototypeGuid()))
+                beh->CallCallbackFunction(CKM_BEHAVIORRESET);
+        }
     }
 
     return CK_OK;
@@ -297,16 +306,32 @@ CKERROR CKIpionManager::SequenceToBeDeleted(CK_ID *objids, int count)
 
 void CKIpionManager::Reset()
 {
+    if (m_CallbackProcessingDepth > 0)
+    {
+        m_ResetRequested = TRUE;
+        return;
+    }
+
     DestroyEnvironment();
 
     m_PhysicsTimeFactor = 0.001f;
     m_DeltaTime = 0.0f;
     m_PhysicsDeltaTime = 0.0f;
+    m_ResetRequested = FALSE;
     m_PhysicsObjects.Clear();
     ClearCollisionSurfaces();
     ClearLiquidSurfaces();
 
     CreateEnvironment();
+}
+
+CKBOOL CKIpionManager::ProcessPendingReset()
+{
+    if (!m_ResetRequested || m_CallbackProcessingDepth > 0)
+        return FALSE;
+
+    Reset();
+    return TRUE;
 }
 
 void CKIpionManager::ResetPhysicsBehaviorHandles()
@@ -326,6 +351,14 @@ void CKIpionManager::ResetPhysicsBehaviorHandles()
         if (IsPhysicsHandleBehavior(beh->GetPrototypeGuid()))
             beh->CallCallbackFunction(CKM_BEHAVIORRESET);
     }
+}
+
+void CKIpionManager::ClearBehaviorCallbacks(CK_ID behaviorID)
+{
+    if (m_PreSimulateCallbacks)
+        m_PreSimulateCallbacks->ClearBehavior(behaviorID);
+    if (m_PostSimulateCallbacks)
+        m_PostSimulateCallbacks->ClearBehavior(behaviorID);
 }
 
 int CKIpionManager::GetPhysicsObjectCount() const
@@ -700,12 +733,17 @@ void CKIpionManager::DestroyEnvironment(CKBOOL resetBehaviorHandles)
 
 void CKIpionManager::Simulate(float deltaTime)
 {
+    if (ProcessPendingReset())
+        return;
+
     SetDeltaTime(deltaTime);
 
     if (m_Environment)
     {
         if (m_PreSimulateCallbacks->m_HasCallbacks)
             m_PreSimulateCallbacks->Process();
+        if (ProcessPendingReset())
+            return;
 
         m_Environment->simulate_dtime(m_PhysicsDeltaTime);
 
@@ -713,6 +751,8 @@ void CKIpionManager::Simulate(float deltaTime)
 
         if (m_PostSimulateCallbacks->m_HasCallbacks)
             m_PostSimulateCallbacks->Process();
+        if (ProcessPendingReset())
+            return;
 
         const int len = m_MovableObjects.len();
         for (int i = len - 1; i >= 0; --i)

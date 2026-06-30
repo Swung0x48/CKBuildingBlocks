@@ -14,6 +14,13 @@ void PhysicsContactManager::Process(IVP_Time time)
         PhysicsContactRecord *record = m_Records.element_at(i);
         PhysicsObject *po = record->m_PhysicsObject;
         PhysicsContactData *data = po->m_ContactData;
+        CKBehavior *beh = data ? data->GetBehavior() : NULL;
+        if (!beh)
+        {
+            m_Records.remove_at(i);
+            delete record;
+            continue;
+        }
 
         double delta = time - record->m_Time;
         int index = record->m_Index;
@@ -29,7 +36,7 @@ void PhysicsContactManager::Process(IVP_Time time)
             else if (delta > data->m_TimeDelayEnd)
             {
                 output[index].active = FALSE;
-                data->m_Behavior->ActivateOutput(2 * index + 1, TRUE);
+                beh->ActivateOutput(2 * index + 1, TRUE);
                 m_Records.remove_at(i);
                 delete record;
             }
@@ -45,7 +52,7 @@ void PhysicsContactManager::Process(IVP_Time time)
         else if (delta > data->m_TimeDelayStart)
         {
             output[index].active = TRUE;
-            data->m_Behavior->ActivateOutput(2 * index, TRUE);
+            beh->ActivateOutput(2 * index, TRUE);
             m_Records.remove_at(i);
             delete record;
         }
@@ -145,10 +152,23 @@ int PhysicsContactManager::GetContactID(CK3dEntity *entity) const
 PhysicsContactData::PhysicsContactData(float timeDelayStart, float timeDelayEnd, int groupOutputCount,
                                        PhysicsContactManager *man, CKBehavior *beh)
     : m_TimeDelayStart(timeDelayStart), m_TimeDelayEnd(timeDelayEnd),
-      m_GroupOutputCount(groupOutputCount > 0 ? groupOutputCount : 0), m_Manager(man), m_Behavior(beh)
+      m_GroupOutputCount(groupOutputCount > 0 ? groupOutputCount : 0), m_Manager(man),
+      m_BehaviorID(beh ? beh->GetID() : 0)
 {
     m_GroupOutputs = m_GroupOutputCount > 0 ? new GroupOutput[m_GroupOutputCount] : NULL;
     m_Listener = NULL;
+}
+
+CKBehavior *PhysicsContactData::GetBehavior() const
+{
+    if (!m_Manager || !m_Manager->m_IpionManager || !m_Manager->m_IpionManager->m_Context || m_BehaviorID == 0)
+        return NULL;
+
+    CKObject *obj = m_Manager->m_IpionManager->m_Context->GetObject(m_BehaviorID);
+    if (!obj || !CKIsChildClassOf(obj, CKCID_BEHAVIOR))
+        return NULL;
+
+    return (CKBehavior *)obj;
 }
 
 PhysicsContactData::~PhysicsContactData()
@@ -159,7 +179,7 @@ PhysicsContactData::~PhysicsContactData()
         m_Listener = NULL;
     }
 
-    CKBehavior *beh = m_Behavior;
+    CKBehavior *beh = GetBehavior();
     if (!beh || !m_Manager || !m_Manager->m_IpionManager)
     {
         if (m_GroupOutputs)
