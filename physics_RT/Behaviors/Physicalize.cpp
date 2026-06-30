@@ -142,15 +142,23 @@ int Physicalize(const CKBehaviorContext &behcontext)
 
         int convexCount = 1;
         beh->GetLocalParameterValue(0, &convexCount);
+        if (convexCount < 0)
+            convexCount = 0;
 
         int ballCount = 0;
         beh->GetLocalParameterValue(1, &ballCount);
+        if (ballCount < 0)
+            ballCount = 0;
 
         int concaveCount = 0;
         beh->GetLocalParameterValue(2, &concaveCount);
+        if (concaveCount < 0)
+            concaveCount = 0;
 
         int pos = CONVEX;
         CKMesh **convexMeshes = (convexCount > 0) ? new CKMesh *[convexCount] : NULL;
+        VxVector *ballPositions = (ballCount > 0) ? new VxVector[ballCount] : NULL;
+        float *ballRadii = (ballCount > 0) ? new float[ballCount] : NULL;
         CKMesh **concaveMeshes = (concaveCount > 0) ? new CKMesh *[concaveCount] : NULL;
         float ballRadius = 1.0f;
 
@@ -160,8 +168,12 @@ int Physicalize(const CKBehaviorContext &behcontext)
 
         for (int j = 0; j < ballCount; ++j)
         {
+            ballPositions[j].Set(0.0f, 0.0f, 0.0f);
+            ballRadii[j] = 1.0f;
+            beh->GetInputParameterValue(pos + 2 * j, &ballPositions[j]);
+            beh->GetInputParameterValue(pos + 2 * j + 1, &ballRadii[j]);
             if (j == 0)
-                beh->GetInputParameterValue(pos + 2 * j + 1, &ballRadius);
+                ballRadius = ballRadii[j];
         }
         pos += ballCount * 2;
 
@@ -174,7 +186,8 @@ int Physicalize(const CKBehaviorContext &behcontext)
         VxVector *shiftMassCenterPtr = (!autoCalcMassCenter) ? &shiftMassCenter : NULL;
 
         IVP_Material *material = new IVP_Material_Simple(friction, elasticity);
-        int ret = man->CreatePhysicsObjectOnParameters(ent, convexCount, convexMeshes, ballCount, concaveCount, concaveMeshes,
+        int ret = man->CreatePhysicsObjectOnParameters(ent, convexCount, convexMeshes, ballCount, ballPositions, ballRadii,
+                                                       concaveCount, concaveMeshes,
                                                        ballRadius, collisionSurface, shiftMassCenterPtr, fixed, material,
                                                        mass, collisionGroup, startFrozen, enableCollision,
                                                        autoCalcMassCenter, linearSpeedDampening, rotSpeedDampening);
@@ -185,6 +198,10 @@ int Physicalize(const CKBehaviorContext &behcontext)
 
         if (convexMeshes)
             delete[] convexMeshes;
+        if (ballPositions)
+            delete[] ballPositions;
+        if (ballRadii)
+            delete[] ballRadii;
         if (concaveMeshes)
             delete[] concaveMeshes;
 

@@ -46,6 +46,16 @@ public:
     IVP_Compact_Surface *m_CompactSurface;
 };
 
+class PhysicsPrivateCollisionSurface : public PhysicsCollisionSurface
+{
+public:
+    PhysicsPrivateCollisionSurface(CK_ID owner = 0, IVP_SurfaceManager *surfaceManager = NULL,
+                                   IVP_Compact_Surface *compactSurface = NULL)
+        : PhysicsCollisionSurface(surfaceManager, compactSurface), m_Owner(owner) {}
+
+    CK_ID m_Owner;
+};
+
 class PhysicsObject
 {
 public:
@@ -105,7 +115,8 @@ public:
     void RemovePhysicsObject(CK3dEntity *entity);
 
     int CreatePhysicsObjectOnParameters(CK3dEntity *target, int convexCount, CKMesh **convexes,
-                                        int ballCount, int concaveCount, CKMesh **concaves, float ballRadius,
+                                        int ballCount, VxVector *ballPositions, float *ballRadii,
+                                        int concaveCount, CKMesh **concaves, float ballRadius,
                                         CKSTRING collisionSurface, VxVector *shiftMassCenter, CKBOOL fixed,
                                         IVP_Material *material, float mass, CKSTRING collisionGroup,
                                         CKBOOL startFrozen, CKBOOL enableCollision, CKBOOL autoCalcMassCenter,
@@ -115,6 +126,13 @@ public:
                                 float linearSpeedDampening, float rotSpeedDampening, CK3dEntity *entity,
                                 CKBOOL startFrozen, CKBOOL fixed, CKSTRING collisionGroup,
                                 CKBOOL enableCollision, VxVector *shiftMassCenter);
+
+    IVP_Polygon *CreatePhysicsMultiBall(CKSTRING name, float mass, int ballCount, VxVector *ballPositions,
+                                        float *ballRadii, IVP_Material *material,
+                                        float linearSpeedDampening, float rotSpeedDampening,
+                                        CK3dEntity *target, CKBOOL startFrozen, CKBOOL fixed,
+                                        CKSTRING collisionGroup, CKBOOL enableCollision,
+                                        VxVector *shiftMassCenter, VxVector *scale);
 
     IVP_Polygon *CreatePhysicsPolygon(CKSTRING name, float mass, IVP_Material *material,
                                       float linearSpeedDampening, float rotSpeedDampening,
@@ -154,10 +172,15 @@ public:
     PhysicsContactManager *GetContactManager() const { return m_ContactManager; }
 
     IVP_SurfaceManager *GetCollisionSurface(const char *name) const;
+    void OwnCollisionSurface(IVP_SurfaceManager *collisionSurface, IVP_Compact_Surface *compactSurface);
+    void OwnPrivateCollisionSurface(CK3dEntity *owner, IVP_SurfaceManager *collisionSurface,
+                                    IVP_Compact_Surface *compactSurface);
     void AddCollisionSurface(const char *name, IVP_SurfaceManager *collisionSurface,
                              IVP_Compact_Surface *compactSurface);
 
     void DeleteCollisionSurfaces();
+    void DeletePrivateCollisionSurface(CK_ID owner);
+    void DeletePrivateCollisionSurfaces();
     void ClearCollisionSurfaces();
 
     void ClearLiquidSurfaces();
@@ -175,6 +198,8 @@ public:
 
     static int AddConvexSurface(IVP_SurfaceBuilder_Ledge_Soup *builder, CKMesh *convex, VxVector *scale);
     static void AddConcaveSurface(IVP_SurfaceBuilder_Ledge_Soup *builder, CKMesh *concave, VxVector *scale);
+    static int AddBallSurface(IVP_SurfaceBuilder_Ledge_Soup *builder, const VxVector &center,
+                              float radius, VxVector *scale);
 
     static void UpdateObjectWorldMatrix(IVP_Real_Object *obj);
 
@@ -188,6 +213,7 @@ public:
     IVP_U_Vector<IVP_Material> m_Materials;
     IVP_U_Vector<IVP_Liquid_Surface_Descriptor_Simple> m_LiquidSurfaces;
     IVP_U_Vector<PhysicsCollisionSurface> m_CollisionSurfaceOwners;
+    IVP_U_Vector<PhysicsPrivateCollisionSurface> m_PrivateCollisionSurfaceOwners;
     PhysicsCallbackContainer *m_PreSimulateCallbacks;
     PhysicsCallbackContainer *m_PostSimulateCallbacks;
     PhysicsContactManager *m_ContactManager;

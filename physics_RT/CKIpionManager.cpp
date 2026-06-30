@@ -22,6 +22,22 @@ static bool IsPhysicsHandleBehavior(CKGUID guid)
            guid == CKGUID(0x199e4cf1, 0x545a78fe);   // PhysicsContinuousContact
 }
 
+static bool IsZeroVector(const VxVector &v)
+{
+    return fabsf(v.x) <= 0.0001f && fabsf(v.y) <= 0.0001f && fabsf(v.z) <= 0.0001f;
+}
+
+static void DeleteCollisionSurfaceOwner(PhysicsCollisionSurface *surface)
+{
+    if (!surface)
+        return;
+
+    delete surface->m_SurfaceManager;
+    if (surface->m_CompactSurface)
+        ivp_free_aligned(surface->m_CompactSurface);
+    delete surface;
+}
+
 class PhysicsObjectListener : public IVP_Listener_Object
 {
 public:
@@ -347,12 +363,17 @@ PhysicsObject *CKIpionManager::GetPhysicsObject(CK3dEntity *entity, CKBOOL loggi
 
 void CKIpionManager::RemovePhysicsObject(CK3dEntity *entity)
 {
-    if (entity)
-        m_PhysicsObjects.Remove(entity->GetID());
+    if (!entity)
+        return;
+
+    const CK_ID owner = entity->GetID();
+    m_PhysicsObjects.Remove(owner);
+    DeletePrivateCollisionSurface(owner);
 }
 
 int CKIpionManager::CreatePhysicsObjectOnParameters(CK3dEntity *target, int convexCount, CKMesh **convexes,
-                                                    int ballCount, int concaveCount, CKMesh **concaves,
+                                                    int ballCount, VxVector *ballPositions, float *ballRadii,
+                                                    int concaveCount, CKMesh **concaves,
                                                     float ballRadius, CKSTRING collisionSurface,
                                                     VxVector *shiftMassCenter, CKBOOL fixed, IVP_Material *material,
                                                     float mass, CKSTRING collisionGroup, CKBOOL startFrozen,
@@ -367,13 +388,34 @@ int CKIpionManager::CreatePhysicsObjectOnParameters(CK3dEntity *target, int conv
 
     IVP_Real_Object *obj = NULL;
 
-    if (ballCount != 0 || !collisionSurface || collisionSurface[0] == '\0')
+    if (ballCount > 0 || !collisionSurface || collisionSurface[0] == '\0')
     {
         if (!collisionSurface || collisionSurface[0] == '\0')
             enableCollision = FALSE;
 
-        obj = CreatePhysicsBall(target->GetName(), mass, ballRadius, material, linearSpeedDampening, rotSpeedDampening,
-                                target, startFrozen, fixed, collisionGroup, enableCollision, shiftMassCenter);
+        if (ballCount > 0)
+        {
+            const float firstRadius = (ballRadii && ballRadii[0] > 0.0f) ? ballRadii[0] : ballRadius;
+            const VxVector firstPosition = ballPositions ? ballPositions[0] : VxVector(0.0f, 0.0f, 0.0f);
+            if (ballCount == 1 && IsZeroVector(firstPosition))
+            {
+                obj = CreatePhysicsBall(target->GetName(), mass, firstRadius, material, linearSpeedDampening,
+                                        rotSpeedDampening, target, startFrozen, fixed, collisionGroup,
+                                        enableCollision, shiftMassCenter);
+            }
+            else
+            {
+                obj = CreatePhysicsMultiBall(target->GetName(), mass, ballCount, ballPositions, ballRadii, material,
+                                             linearSpeedDampening, rotSpeedDampening, target, startFrozen, fixed,
+                                             collisionGroup, enableCollision, shiftMassCenter, &scale);
+            }
+        }
+        else
+        {
+            obj = CreatePhysicsBall(target->GetName(), mass, ballRadius, material, linearSpeedDampening,
+                                    rotSpeedDampening, target, startFrozen, fixed, collisionGroup,
+                                    enableCollision, shiftMassCenter);
+        }
     }
     else
     {
@@ -444,6 +486,51 @@ int CKIpionManager::CreatePhysicsObjectOnParameters(CK3dEntity *target, int conv
     m_PhysicsObjects.Insert(target->GetID(), po);
 
     return CK_OK;
+}
+
+IVP_Polygon *CKIpionManager::CreatePhysicsMultiBall(CKSTRING name, float mass, int ballCount,
+                                                    VxVector *ballPositions, float *ballRadii,
+                                                    IVP_Material *material, float linearSpeedDampening,
+                                                    float rotSpeedDampening, CK3dEntity *target,
+                                                    CKBOOL startFrozen, CKBOOL fixed, CKSTRING collisionGroup,
+                                                    CKBOOL enableCollision, VxVector *shiftMassCenter, VxVector *scale)
+{
+    if (ballCount <= 0 || !ballPositions || !ballRadii)
+        return NULL;
+
+    IVP_SurfaceBuilder_Ledge_Soup builder;
+    int ledgeCount = 0;
+    for (int i = 0; i < ballCount; ++i)
+    {
+        ledgeCount += AddBallSurface(&builder, ballPositions[i], ballRadii[i], scale);
+    }
+
+    if (ledgeCount == 0)
+        return NULL;
+
+    IVP_Compact_Surface *compactSurface = builder.compile();
+    if (!compactSurface)
+        return NULL;
+
+    IVP_SurfaceManager_Polygon *surman = new IVP_SurfaceManager_Polygon(compactSurface);
+    if (!surman)
+    {
+        ivp_free_aligned(compactSurface);
+        return NULL;
+    }
+
+    IVP_Polygon *polygon = CreatePhysicsPolygon(name, mass, material, linearSpeedDampening, rotSpeedDampening, target,
+                                                startFrozen, fixed, collisionGroup, enableCollision, surman,
+                                                shiftMassCenter);
+    if (!polygon)
+    {
+        delete surman;
+        ivp_free_aligned(compactSurface);
+        return NULL;
+    }
+
+    OwnPrivateCollisionSurface(target, surman, compactSurface);
+    return polygon;
 }
 
 IVP_Ball *CKIpionManager::CreatePhysicsBall(CKSTRING name, float mass, float ballRadius, IVP_Material *material,
@@ -597,6 +684,8 @@ void CKIpionManager::DestroyEnvironment(CKBOOL resetBehaviorHandles)
         m_Environment = NULL;
     }
 
+    DeletePrivateCollisionSurfaces();
+
     m_MovableObjects.clear();
 
     for (int i = m_Materials.len() - 1; i >= 0; --i)
@@ -687,6 +776,24 @@ IVP_SurfaceManager *CKIpionManager::GetCollisionSurface(const char *name) const
     return (IVP_SurfaceManager *)m_CollisionSurfaces->find(name);
 }
 
+void CKIpionManager::OwnCollisionSurface(IVP_SurfaceManager *collisionSurface, IVP_Compact_Surface *compactSurface)
+{
+    if (!collisionSurface)
+        return;
+
+    m_CollisionSurfaceOwners.add(new PhysicsCollisionSurface(collisionSurface, compactSurface));
+}
+
+void CKIpionManager::OwnPrivateCollisionSurface(CK3dEntity *owner, IVP_SurfaceManager *collisionSurface,
+                                                IVP_Compact_Surface *compactSurface)
+{
+    if (!owner || !collisionSurface)
+        return;
+
+    m_PrivateCollisionSurfaceOwners.add(
+        new PhysicsPrivateCollisionSurface(owner->GetID(), collisionSurface, compactSurface));
+}
+
 void CKIpionManager::AddCollisionSurface(const char *name, IVP_SurfaceManager *collisionSurface,
                                          IVP_Compact_Surface *compactSurface)
 {
@@ -699,7 +806,7 @@ void CKIpionManager::AddCollisionSurface(const char *name, IVP_SurfaceManager *c
     if (name)
     {
         m_CollisionSurfaces->add(name, collisionSurface);
-        m_CollisionSurfaceOwners.add(new PhysicsCollisionSurface(collisionSurface, compactSurface));
+        OwnCollisionSurface(collisionSurface, compactSurface);
     }
 }
 
@@ -709,17 +816,34 @@ void CKIpionManager::DeleteCollisionSurfaces()
     {
         PhysicsCollisionSurface *surface = m_CollisionSurfaceOwners.element_at(i);
         m_CollisionSurfaceOwners.remove_at(i);
-        if (surface)
-        {
-            delete surface->m_SurfaceManager;
-            if (surface->m_CompactSurface)
-                ivp_free_aligned(surface->m_CompactSurface);
-            delete surface;
-        }
+        DeleteCollisionSurfaceOwner(surface);
     }
 
     delete m_CollisionSurfaces;
     m_CollisionSurfaces = NULL;
+}
+
+void CKIpionManager::DeletePrivateCollisionSurface(CK_ID owner)
+{
+    for (int i = m_PrivateCollisionSurfaceOwners.len() - 1; i >= 0; --i)
+    {
+        PhysicsPrivateCollisionSurface *surface = m_PrivateCollisionSurfaceOwners.element_at(i);
+        if (surface && surface->m_Owner == owner)
+        {
+            m_PrivateCollisionSurfaceOwners.remove_at(i);
+            DeleteCollisionSurfaceOwner(surface);
+        }
+    }
+}
+
+void CKIpionManager::DeletePrivateCollisionSurfaces()
+{
+    for (int i = m_PrivateCollisionSurfaceOwners.len() - 1; i >= 0; --i)
+    {
+        PhysicsPrivateCollisionSurface *surface = m_PrivateCollisionSurfaceOwners.element_at(i);
+        m_PrivateCollisionSurfaceOwners.remove_at(i);
+        DeleteCollisionSurfaceOwner(surface);
+    }
 }
 
 void CKIpionManager::ClearCollisionSurfaces()
@@ -920,6 +1044,51 @@ void CKIpionManager::AddConcaveSurface(IVP_SurfaceBuilder_Ledge_Soup *builder, C
         if (ledge)
             builder->insert_ledge(ledge);
     }
+}
+
+int CKIpionManager::AddBallSurface(IVP_SurfaceBuilder_Ledge_Soup *builder, const VxVector &center,
+                                   float radius, VxVector *scale)
+{
+    if (!builder || radius <= 0.0f)
+        return 0;
+
+    static const float invSqrt2 = 0.707106781f;
+    static const float invSqrt3 = 0.577350269f;
+    static const float directions[][3] = {
+        {1.0f, 0.0f, 0.0f}, {-1.0f, 0.0f, 0.0f},
+        {0.0f, 1.0f, 0.0f}, {0.0f, -1.0f, 0.0f},
+        {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, -1.0f},
+        {invSqrt2, invSqrt2, 0.0f}, {-invSqrt2, invSqrt2, 0.0f},
+        {invSqrt2, -invSqrt2, 0.0f}, {-invSqrt2, -invSqrt2, 0.0f},
+        {invSqrt2, 0.0f, invSqrt2}, {-invSqrt2, 0.0f, invSqrt2},
+        {invSqrt2, 0.0f, -invSqrt2}, {-invSqrt2, 0.0f, -invSqrt2},
+        {0.0f, invSqrt2, invSqrt2}, {0.0f, -invSqrt2, invSqrt2},
+        {0.0f, invSqrt2, -invSqrt2}, {0.0f, -invSqrt2, -invSqrt2},
+        {invSqrt3, invSqrt3, invSqrt3}, {-invSqrt3, invSqrt3, invSqrt3},
+        {invSqrt3, -invSqrt3, invSqrt3}, {invSqrt3, invSqrt3, -invSqrt3},
+        {-invSqrt3, -invSqrt3, invSqrt3}, {-invSqrt3, invSqrt3, -invSqrt3},
+        {invSqrt3, -invSqrt3, -invSqrt3}, {-invSqrt3, -invSqrt3, -invSqrt3}};
+
+    VxVector s = (scale) ? *scale : VxVector(1.0f, 1.0f, 1.0f);
+
+    IVP_U_Vector<IVP_U_Point> points(sizeof(directions) / sizeof(directions[0]));
+    IVP_U_Point pts[sizeof(directions) / sizeof(directions[0])];
+    for (int i = 0; i < (int)(sizeof(directions) / sizeof(directions[0])); ++i)
+    {
+        VxVector p(center.x + directions[i][0] * radius,
+                   center.y + directions[i][1] * radius,
+                   center.z + directions[i][2] * radius);
+        VxVector t = p * s;
+        pts[i].set(t.x, t.y, t.z);
+        points.add(&pts[i]);
+    }
+
+    IVP_Compact_Ledge *ledge = IVP_SurfaceBuilder_Pointsoup::convert_pointsoup_to_compact_ledge(&points);
+    if (!ledge)
+        return 0;
+
+    builder->insert_ledge(ledge);
+    return 1;
 }
 
 void CKIpionManager::UpdateObjectWorldMatrix(IVP_Real_Object *obj)
