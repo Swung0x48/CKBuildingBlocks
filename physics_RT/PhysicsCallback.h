@@ -25,7 +25,9 @@ class PhysicsCallbackContainer
 {
 public:
     explicit PhysicsCallbackContainer(CKIpionManager *manager) : m_IpionManager(manager), m_HasCallbacks(FALSE) {}
+    ~PhysicsCallbackContainer();
 
+    void Clear();
     void Process();
     void Process(PhysicsCallback *pc);
 
