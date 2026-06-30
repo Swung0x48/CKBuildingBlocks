@@ -78,6 +78,8 @@ int PhysicsWakeUp(const CKBehaviorContext &behcontext)
         return CKBR_OWNERERROR;
 
     CKIpionManager *man = CKIpionManager::GetManager(context);
+    if (!man || !man->GetEnvironment() || !man->m_PreSimulateCallbacks)
+        return CKBR_GENERICERROR;
 
     PhysicsWakeUpCallback *cb = new PhysicsWakeUpCallback(man, beh);
     man->m_PreSimulateCallbacks->Process(cb);

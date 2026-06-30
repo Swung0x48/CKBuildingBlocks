@@ -45,27 +45,16 @@ CKERROR CreatePhysicsResetProto(CKBehaviorPrototype **pproto)
     return CK_OK;
 }
 
-class PhysicsResetCall : public PhysicsCallback
-{
-public:
-    PhysicsResetCall(CKIpionManager *pm, CKBehavior *beh) : PhysicsCallback(pm, beh, 2) {}
-
-    virtual int Execute()
-    {
-        m_IpionManager->Reset();
-        return 1;
-    }
-};
-
 int PhysicsReset(const CKBehaviorContext &behcontext)
 {
     CKBehavior *beh = behcontext.Behavior;
     CKContext *context = behcontext.Context;
 
     CKIpionManager *man = CKIpionManager::GetManager(context);
+    if (!man)
+        return CKBR_GENERICERROR;
 
-    PhysicsResetCall *physicsCall = new PhysicsResetCall(man, beh);
-    man->m_PreSimulateCallbacks->Process(physicsCall);
+    man->Reset();
 
     beh->ActivateInput(0, FALSE);
     beh->ActivateOutput(0);

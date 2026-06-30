@@ -36,6 +36,16 @@
 class PhysicsObjectListener;
 class PhysicsCollisionListener;
 
+class PhysicsCollisionSurface
+{
+public:
+    PhysicsCollisionSurface(IVP_SurfaceManager *surfaceManager = NULL, IVP_Compact_Surface *compactSurface = NULL)
+        : m_SurfaceManager(surfaceManager), m_CompactSurface(compactSurface) {}
+
+    IVP_SurfaceManager *m_SurfaceManager;
+    IVP_Compact_Surface *m_CompactSurface;
+};
+
 class PhysicsObject
 {
 public:
@@ -88,6 +98,7 @@ public:
     }
 
     virtual void Reset();
+    void ResetPhysicsBehaviorHandles();
 
     int GetPhysicsObjectCount() const;
     PhysicsObject *GetPhysicsObject(CK3dEntity *entity, CKBOOL logging = FALSE);
@@ -123,7 +134,7 @@ public:
 
     IVP_Environment *GetEnvironment() const { return m_Environment; }
     void CreateEnvironment();
-    void DestroyEnvironment();
+    void DestroyEnvironment(CKBOOL resetBehaviorHandles = TRUE);
 
     void Simulate(float deltaTime);
 
@@ -143,7 +154,8 @@ public:
     PhysicsContactManager *GetContactManager() const { return m_ContactManager; }
 
     IVP_SurfaceManager *GetCollisionSurface(const char *name) const;
-    void AddCollisionSurface(const char *name, IVP_SurfaceManager *collisionSurface);
+    void AddCollisionSurface(const char *name, IVP_SurfaceManager *collisionSurface,
+                             IVP_Compact_Surface *compactSurface);
 
     void DeleteCollisionSurfaces();
     void ClearCollisionSurfaces();
@@ -175,6 +187,7 @@ public:
     IVP_U_Vector<CK3dEntity> m_Entities;
     IVP_U_Vector<IVP_Material> m_Materials;
     IVP_U_Vector<IVP_Liquid_Surface_Descriptor_Simple> m_LiquidSurfaces;
+    IVP_U_Vector<PhysicsCollisionSurface> m_CollisionSurfaceOwners;
     PhysicsCallbackContainer *m_PreSimulateCallbacks;
     PhysicsCallbackContainer *m_PostSimulateCallbacks;
     PhysicsContactManager *m_ContactManager;

@@ -94,6 +94,8 @@ int Physicalize(const CKBehaviorContext &behcontext)
         return CKBR_OWNERERROR;
 
     CKIpionManager *man = CKIpionManager::GetManager(context);
+    if (!man || !man->GetEnvironment())
+        return CKBR_GENERICERROR;
 
     if (beh->IsInputActive(0)) // Physicalize
     {
@@ -158,7 +160,8 @@ int Physicalize(const CKBehaviorContext &behcontext)
 
         for (int j = 0; j < ballCount; ++j)
         {
-            beh->GetInputParameterValue(pos + 2 * j + 1, &ballRadius);
+            if (j == 0)
+                beh->GetInputParameterValue(pos + 2 * j + 1, &ballRadius);
         }
         pos += ballCount * 2;
 
@@ -171,11 +174,14 @@ int Physicalize(const CKBehaviorContext &behcontext)
         VxVector *shiftMassCenterPtr = (!autoCalcMassCenter) ? &shiftMassCenter : NULL;
 
         IVP_Material *material = new IVP_Material_Simple(friction, elasticity);
-        man->m_Materials.add(material);
         int ret = man->CreatePhysicsObjectOnParameters(ent, convexCount, convexMeshes, ballCount, concaveCount, concaveMeshes,
                                                        ballRadius, collisionSurface, shiftMassCenterPtr, fixed, material,
                                                        mass, collisionGroup, startFrozen, enableCollision,
                                                        autoCalcMassCenter, linearSpeedDampening, rotSpeedDampening);
+        if (ret == CK_OK)
+            man->m_Materials.add(material);
+        else
+            delete material;
 
         if (convexMeshes)
             delete[] convexMeshes;

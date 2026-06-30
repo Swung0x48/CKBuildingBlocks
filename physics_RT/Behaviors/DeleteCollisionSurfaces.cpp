@@ -70,6 +70,8 @@ int DeleteCollisionSurfaces(const CKBehaviorContext &behcontext)
     CKContext *context = behcontext.Context;
 
     CKIpionManager *man = CKIpionManager::GetManager(context);
+    if (!man || !man->m_PreSimulateCallbacks)
+        return CKBR_GENERICERROR;
 
     DeleteCollisionSurfacesCallback *cb = new DeleteCollisionSurfacesCallback(man, beh);
     man->m_PreSimulateCallbacks->Process(cb);

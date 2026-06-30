@@ -11,6 +11,17 @@
 #include "ivp_surbuild_pointsoup.hxx"
 #include "ivp_surman_polygon.hxx"
 
+static bool IsPhysicsHandleBehavior(CKGUID guid)
+{
+    return guid == CKGUID(0x5e624f0a, 0x35160450) || // Set Physics Ball Joint
+           guid == CKGUID(0x7435488d, 0x201d1188) || // PhysicsCollDetection
+           guid == CKGUID(0x56e20c57, 0xb926068) ||  // SetPhysicsForce
+           guid == CKGUID(0x41cd3653, 0x0de60c1d) || // Set Physics Hinge
+           guid == CKGUID(0x2973360e, 0x23d31aa7) || // Set Physics Slider
+           guid == CKGUID(0x24a06a3a, 0x07100fce) || // Set Physics Spring
+           guid == CKGUID(0x199e4cf1, 0x545a78fe);   // PhysicsContinuousContact
+}
+
 class PhysicsObjectListener : public IVP_Listener_Object
 {
 public:
@@ -168,7 +179,12 @@ CKIpionManager::CKIpionManager(CKContext *context)
     m_CollDetectionIDAttribType = -1;
 }
 
-CKIpionManager::~CKIpionManager() {}
+CKIpionManager::~CKIpionManager()
+{
+    DestroyEnvironment();
+    DeleteCollisionSurfaces();
+    ClearLiquidSurfaces();
+}
 
 CKERROR CKIpionManager::OnCKInit()
 {
@@ -185,6 +201,7 @@ CKERROR CKIpionManager::OnCKEnd()
 {
     DestroyEnvironment();
     DeleteCollisionSurfaces();
+    ClearLiquidSurfaces();
 
     m_TimeManager = NULL;
 
@@ -267,9 +284,32 @@ void CKIpionManager::Reset()
     DestroyEnvironment();
 
     m_PhysicsTimeFactor = 0.001f;
+    m_DeltaTime = 0.0f;
+    m_PhysicsDeltaTime = 0.0f;
     m_PhysicsObjects.Clear();
+    ClearCollisionSurfaces();
+    ClearLiquidSurfaces();
 
     CreateEnvironment();
+}
+
+void CKIpionManager::ResetPhysicsBehaviorHandles()
+{
+    if (!m_Context)
+        return;
+
+    CK_ID *ids = m_Context->GetObjectsListByClassID(CKCID_BEHAVIOR);
+    const int count = m_Context->GetObjectsCountByClassID(CKCID_BEHAVIOR);
+
+    for (int i = 0; i < count; ++i)
+    {
+        CKBehavior *beh = (CKBehavior *)m_Context->GetObject(ids[i]);
+        if (!beh)
+            continue;
+
+        if (IsPhysicsHandleBehavior(beh->GetPrototypeGuid()))
+            beh->CallCallbackFunction(CKM_BEHAVIORRESET);
+    }
 }
 
 int CKIpionManager::GetPhysicsObjectCount() const
@@ -319,6 +359,9 @@ int CKIpionManager::CreatePhysicsObjectOnParameters(CK3dEntity *target, int conv
                                                     CKBOOL enableCollision, CKBOOL autoCalcMassCenter,
                                                     float linearSpeedDampening, float rotSpeedDampening)
 {
+    if (!target || !m_Environment)
+        return CKERR_INVALIDPARAMETER;
+
     VxVector scale;
     target->GetScale(&scale);
 
@@ -366,14 +409,23 @@ int CKIpionManager::CreatePhysicsObjectOnParameters(CK3dEntity *target, int conv
             if (ledgeCount != 0)
             {
                 IVP_Compact_Surface *compactSurface = builder.compile();
-                surman = new IVP_SurfaceManager_Polygon(compactSurface);
-                AddCollisionSurface(collisionSurface, surman);
+                if (compactSurface)
+                {
+                    surman = new IVP_SurfaceManager_Polygon(compactSurface);
+                    if (surman)
+                        AddCollisionSurface(collisionSurface, surman, compactSurface);
+                    else
+                        ivp_free_aligned(compactSurface);
+                }
             }
             else
             {
                 m_Context->OutputToConsoleEx("Error: incorrect mesh for %s !\n", target->GetName());
             }
         }
+
+        if (!surman)
+            return CKERR_INVALIDPARAMETER;
 
         obj = CreatePhysicsPolygon(target->GetName(), mass, material, linearSpeedDampening, rotSpeedDampening, target,
                                    startFrozen, fixed, collisionGroup, enableCollision, surman, shiftMassCenter);
@@ -486,8 +538,11 @@ void CKIpionManager::CreateEnvironment()
     SetupCollisionDetectID();
 }
 
-void CKIpionManager::DestroyEnvironment()
+void CKIpionManager::DestroyEnvironment(CKBOOL resetBehaviorHandles)
 {
+    if (resetBehaviorHandles)
+        ResetPhysicsBehaviorHandles();
+
     m_CollisionFilterExclusivePair = NULL;
 
     if (m_PreSimulateCallbacks)
@@ -504,7 +559,8 @@ void CKIpionManager::DestroyEnvironment()
 
     if (m_ObjectListener)
     {
-        m_Environment->remove_listener_object_global(m_ObjectListener);
+        if (m_Environment)
+            m_Environment->remove_listener_object_global(m_ObjectListener);
 
         delete m_ObjectListener;
         m_ObjectListener = NULL;
@@ -512,7 +568,8 @@ void CKIpionManager::DestroyEnvironment()
 
     if (m_CollisionListener)
     {
-        m_Environment->remove_listener_collision_global(m_CollisionListener);
+        if (m_Environment)
+            m_Environment->remove_listener_collision_global(m_CollisionListener);
 
         delete m_CollisionListener;
         m_CollisionListener = NULL;
@@ -534,6 +591,14 @@ void CKIpionManager::DestroyEnvironment()
     }
     m_Entities.clear();
 
+    if (m_Environment)
+    {
+        delete m_Environment;
+        m_Environment = NULL;
+    }
+
+    m_MovableObjects.clear();
+
     for (int i = m_Materials.len() - 1; i >= 0; --i)
     {
         IVP_Material *material = m_Materials.element_at(i);
@@ -541,11 +606,7 @@ void CKIpionManager::DestroyEnvironment()
     }
     m_Materials.clear();
 
-    if (m_Environment)
-    {
-        delete m_Environment;
-        m_Environment = NULL;
-    }
+    ClearLiquidSurfaces();
 }
 
 void CKIpionManager::Simulate(float deltaTime)
@@ -620,20 +681,43 @@ void CKIpionManager::SetGravity(const VxVector &gravity)
 
 IVP_SurfaceManager *CKIpionManager::GetCollisionSurface(const char *name) const
 {
-    if (!name)
+    if (!name || !m_CollisionSurfaces)
         return NULL;
 
     return (IVP_SurfaceManager *)m_CollisionSurfaces->find(name);
 }
 
-void CKIpionManager::AddCollisionSurface(const char *name, IVP_SurfaceManager *collisionSurface)
+void CKIpionManager::AddCollisionSurface(const char *name, IVP_SurfaceManager *collisionSurface,
+                                         IVP_Compact_Surface *compactSurface)
 {
+    if (!name || !collisionSurface)
+        return;
+
+    if (!m_CollisionSurfaces)
+        m_CollisionSurfaces = new IVP_U_String_Hash(64);
+
     if (name)
+    {
         m_CollisionSurfaces->add(name, collisionSurface);
+        m_CollisionSurfaceOwners.add(new PhysicsCollisionSurface(collisionSurface, compactSurface));
+    }
 }
 
 void CKIpionManager::DeleteCollisionSurfaces()
 {
+    for (int i = m_CollisionSurfaceOwners.len() - 1; i >= 0; --i)
+    {
+        PhysicsCollisionSurface *surface = m_CollisionSurfaceOwners.element_at(i);
+        m_CollisionSurfaceOwners.remove_at(i);
+        if (surface)
+        {
+            delete surface->m_SurfaceManager;
+            if (surface->m_CompactSurface)
+                ivp_free_aligned(surface->m_CompactSurface);
+            delete surface;
+        }
+    }
+
     delete m_CollisionSurfaces;
     m_CollisionSurfaces = NULL;
 }
