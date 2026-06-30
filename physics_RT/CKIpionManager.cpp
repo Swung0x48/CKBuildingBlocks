@@ -1221,6 +1221,11 @@ void CKIpionManager::UpdateObjectWorldMatrix(IVP_Real_Object *obj)
         return;
 
     CK3dEntity *ent = (CK3dEntity *)obj->client_data;
+    if (!ent)
+        return;
+
+    VxVector scale(1.0f, 1.0f, 1.0f);
+    ent->GetScale(&scale);
 
     IVP_U_Matrix mat;
     obj->get_m_world_f_object_AT(&mat);
@@ -1231,6 +1236,15 @@ void CKIpionManager::UpdateObjectWorldMatrix(IVP_Real_Object *obj)
     for (int i = 0; i < 3; ++i)
         for (int j = 0; j < 3; ++j)
             m[j][i] = (float)mat.get_elem(i, j);
+    m[0][0] *= scale.x;
+    m[0][1] *= scale.x;
+    m[0][2] *= scale.x;
+    m[1][0] *= scale.y;
+    m[1][1] *= scale.y;
+    m[1][2] *= scale.y;
+    m[2][0] *= scale.z;
+    m[2][1] *= scale.z;
+    m[2][2] *= scale.z;
     m[0][3] = 0.0f;
     m[1][3] = 0.0f;
     m[2][3] = 0.0f;

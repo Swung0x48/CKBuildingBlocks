@@ -62,6 +62,11 @@ CKERROR CreatePhysicsBallJointProto(CKBehaviorPrototype **pproto)
 #define OBJECT2 0
 #define POSITION1 1
 #define REFERENTIAL1 2
+#define POSITION2 3
+#define REFERENTIAL2 4
+
+#define IVP_HANDLE 0
+#define SPECIFY_2_POINTS 1
 
 class PhysicsBallJointCallback : public PhysicsCallback
 {
@@ -101,17 +106,50 @@ public:
 
         IVP_Template_Constraint tmpl;
 
-        VxVector pos;
+        VxVector pos1;
         if (referential)
-            referential->Transform(&pos, &position1);
+            referential->Transform(&pos1, &position1);
         else
-            pos = position1;
+            pos1 = position1;
 
-        IVP_U_Point anchor(pos.x, pos.y, pos.z);
-        tmpl.set_ballsocket_ws(objR, &anchor, objA);
+        CKBOOL specify2Points = FALSE;
+        beh->GetLocalParameterValue(SPECIFY_2_POINTS, &specify2Points);
+
+        if (specify2Points && beh->GetInputParameterCount() >= 5)
+        {
+            VxVector position2;
+            beh->GetInputParameterValue(POSITION2, &position2);
+
+            CK3dEntity *referential2 = (CK3dEntity *)beh->GetInputParameterObject(REFERENTIAL2);
+
+            VxVector pos2;
+            if (referential2)
+                referential2->Transform(&pos2, &position2);
+            else
+                pos2 = position2;
+
+            IVP_U_Matrix mWorldObject;
+            objR->get_m_world_f_object_AT(&mWorldObject);
+
+            IVP_U_Point anchorWs(pos1.x, pos1.y, pos1.z);
+            IVP_U_Point anchorRos;
+            mWorldObject.vimult4(&anchorWs, &anchorRos);
+
+            VxVector delta = pos2 - pos1;
+            IVP_U_Point deltaWs(delta.x, delta.y, delta.z);
+            IVP_U_Point deltaRos;
+            mWorldObject.vimult3(&deltaWs, &deltaRos);
+
+            tmpl.set_ballsocket_tense_Ros(objR, &anchorRos, objA, &deltaRos);
+        }
+        else
+        {
+            IVP_U_Point anchor(pos1.x, pos1.y, pos1.z);
+            tmpl.set_ballsocket_ws(objR, &anchor, objA);
+        }
 
         IVP_Constraint *constraint = m_IpionManager->CreateConstraint(&tmpl);
-        beh->SetLocalParameterValue(0, &constraint);
+        beh->SetLocalParameterValue(IVP_HANDLE, &constraint);
 
         return CKBR_ACTIVATENEXTFRAME;
     }
@@ -123,7 +161,7 @@ int PhysicsBallJoint(const CKBehaviorContext &behcontext)
     CKContext *context = behcontext.Context;
 
     IVP_Constraint *constraint = NULL;
-    beh->GetLocalParameterValue(0, &constraint);
+    beh->GetLocalParameterValue(IVP_HANDLE, &constraint);
 
     if (beh->IsInputActive(0))
     {
@@ -150,7 +188,7 @@ int PhysicsBallJoint(const CKBehaviorContext &behcontext)
         {
             delete constraint;
             constraint = NULL;
-            beh->SetLocalParameterValue(0, &constraint);
+            beh->SetLocalParameterValue(IVP_HANDLE, &constraint);
         }
 
         beh->ActivateInput(1, FALSE);
@@ -174,26 +212,32 @@ CKERROR PhysicsBallJointCallBack(const CKBehaviorContext &behcontext)
     case CKM_BEHAVIORDETACH:
     {
         IVP_Constraint *constraint = NULL;
-        beh->GetLocalParameterValue(0, &constraint);
+        beh->GetLocalParameterValue(IVP_HANDLE, &constraint);
 
         CKIpionManager *man = CKIpionManager::GetManager(behcontext.Context);
         if (constraint && man && man->GetEnvironment())
             delete constraint;
 
         constraint = NULL;
-        beh->SetLocalParameterValue(0, &constraint);
+        beh->SetLocalParameterValue(IVP_HANDLE, &constraint);
         return CKBR_OK;
     }
     case CKM_BEHAVIORSETTINGSEDITED:
     {
-        int count = beh->GetInputParameterCount();
-        if (count == 3)
-            return CKBR_OK;
+        CKBOOL specify2Points = FALSE;
+        beh->GetLocalParameterValue(SPECIFY_2_POINTS, &specify2Points);
 
+        int count = beh->GetInputParameterCount();
         for (int i = count - 1; i >= 3; --i)
         {
             CKParameterIn *pin = beh->RemoveInputParameter(i);
             CKDestroyObject(pin);
+        }
+
+        if (specify2Points)
+        {
+            beh->CreateInputParameter("Position 2", CKPGUID_VECTOR);
+            beh->CreateInputParameter("Referential 2", CKPGUID_3DENTITY);
         }
     }
     default:
