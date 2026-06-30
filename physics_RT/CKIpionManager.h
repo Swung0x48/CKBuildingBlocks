@@ -69,7 +69,7 @@ public:
 class PhysicsObject
 {
 public:
-    PhysicsObject() : m_Behavior(NULL), m_RealObject(NULL),
+    PhysicsObject() : m_RealObject(NULL),
                       m_FrictionCount(0), m_FrictionTime(0),
                       m_ContactData(NULL) {}
 
@@ -82,7 +82,6 @@ public:
         }
     }
 
-    CKBehavior *m_Behavior;
     IVP_Real_Object *m_RealObject;
     int m_FrictionCount;
     IVP_Time m_FrictionTime;
