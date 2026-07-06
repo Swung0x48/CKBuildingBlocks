@@ -837,10 +837,8 @@ void CKIpionManager::SetDeltaTime(float delta)
 
 void CKIpionManager::SetTimeFactor(float factor)
 {
-    if (!(factor >= 0.0f))
+    if (factor < 0.0f)
         factor = 0.0f;
-    if (factor > 10.0f)
-        factor = 10.0f;
     m_PhysicsTimeFactor = factor * 0.001f;
 }
 
