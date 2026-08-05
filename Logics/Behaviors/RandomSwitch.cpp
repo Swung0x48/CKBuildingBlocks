@@ -104,7 +104,7 @@ int RandomSwitch(const CKBehaviorContext &behcontext)
         }
     }
 
-    float res = sum * rand() / RAND_MAX;
+    float res = sum * rand() / static_cast<float>(RAND_MAX);
 
     sum = 0.0f;
     for (c = 0; c < input_count; ++c)
@@ -145,7 +145,7 @@ CKERROR RandomSwitchCallBack(const CKBehaviorContext &behcontext)
 
         while (c_pin < c_out) // we must add 'Input Param'
         {
-            sprintf(pin_str, "Coef %d", c_pin);
+            snprintf(pin_str, sizeof(pin_str), "Coef %d", c_pin);
             beh->CreateInputParameter(pin_str, CKPGUID_FLOAT);
             ++c_pin;
         }

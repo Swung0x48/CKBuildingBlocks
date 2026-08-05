@@ -54,7 +54,7 @@ void FollowProblem::Set(FollowStruct *followStruct, Path *path, CKAttributeType 
     if (m_Fuzzyness > 1)
         m_Fuzzyness = 1;
     m_Fuzzyness2 = 0.5f * m_Fuzzyness;
-    m_Fuzzyness /= RAND_MAX;
+    m_Fuzzyness /= static_cast<float>(RAND_MAX);
     m_Pingpong = followStruct->pingpong;
     if (followStruct->maxBlockedTime >= 0)
         m_MaxBlockedTime = followStruct->maxBlockedTime;

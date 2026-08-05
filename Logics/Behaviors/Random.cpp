@@ -98,7 +98,7 @@ int Random(const CKBehaviorContext &behcontext)
         float max;
         pin->GetValue(&max);
 
-        float res = min + rand() * (max - min) / RAND_MAX;
+        float res = min + rand() * (max - min) / static_cast<float>(RAND_MAX);
         pout->SetValue(&res);
 
         return CKBR_OK;
@@ -131,9 +131,9 @@ int Random(const CKBehaviorContext &behcontext)
         pin->GetValue(&max);
 
         VxVector res;
-        res.x = min.x + rand() * (max.x - min.x) / RAND_MAX;
-        res.y = min.y + rand() * (max.y - min.y) / RAND_MAX;
-        res.z = min.z + rand() * (max.z - min.z) / RAND_MAX;
+        res.x = min.x + rand() * (max.x - min.x) / static_cast<float>(RAND_MAX);
+        res.y = min.y + rand() * (max.y - min.y) / static_cast<float>(RAND_MAX);
+        res.z = min.z + rand() * (max.z - min.z) / static_cast<float>(RAND_MAX);
 
         pout->SetValue(&res);
 
@@ -151,8 +151,8 @@ int Random(const CKBehaviorContext &behcontext)
         pin->GetValue(&max);
 
         Vx2DVector res;
-        res.x = min.x + rand() * (max.x - min.x) / RAND_MAX;
-        res.y = min.y + rand() * (max.y - min.y) / RAND_MAX;
+        res.x = min.x + rand() * (max.x - min.x) / static_cast<float>(RAND_MAX);
+        res.y = min.y + rand() * (max.y - min.y) / static_cast<float>(RAND_MAX);
 
         pout->SetValue(&res);
 
@@ -170,10 +170,10 @@ int Random(const CKBehaviorContext &behcontext)
         pin->GetValue(&max);
 
         VxRect res;
-        res.left = min.left + rand() * (max.left - min.left) / RAND_MAX;
-        res.top = min.top + rand() * (max.top - min.top) / RAND_MAX;
-        res.right = min.right + rand() * (max.right - min.right) / RAND_MAX;
-        res.bottom = min.bottom + rand() * (max.bottom - min.bottom) / RAND_MAX;
+        res.left = min.left + rand() * (max.left - min.left) / static_cast<float>(RAND_MAX);
+        res.top = min.top + rand() * (max.top - min.top) / static_cast<float>(RAND_MAX);
+        res.right = min.right + rand() * (max.right - min.right) / static_cast<float>(RAND_MAX);
+        res.bottom = min.bottom + rand() * (max.bottom - min.bottom) / static_cast<float>(RAND_MAX);
         res.Normalize();
         pout->SetValue(&res);
 
@@ -200,10 +200,10 @@ int Random(const CKBehaviorContext &behcontext)
         pin->GetValue(&max);
 
         VxColor res;
-        res.r = min.r + rand() * (max.r - min.r) / RAND_MAX;
-        res.g = min.g + rand() * (max.g - min.g) / RAND_MAX;
-        res.b = min.b + rand() * (max.b - min.b) / RAND_MAX;
-        res.a = min.a + rand() * (max.a - min.a) / RAND_MAX;
+        res.r = min.r + rand() * (max.r - min.r) / static_cast<float>(RAND_MAX);
+        res.g = min.g + rand() * (max.g - min.g) / static_cast<float>(RAND_MAX);
+        res.b = min.b + rand() * (max.b - min.b) / static_cast<float>(RAND_MAX);
+        res.a = min.a + rand() * (max.a - min.a) / static_cast<float>(RAND_MAX);
         pout->SetValue(&res);
 
         return CKBR_OK;
