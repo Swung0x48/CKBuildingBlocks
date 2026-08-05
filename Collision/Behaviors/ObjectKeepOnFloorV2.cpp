@@ -179,7 +179,7 @@ int DoObjectKeepOnFloorV2Point(const CKBehaviorContext &behcontext)
     VxVector pos = (box.Max + box.Min) * 0.5f;
     pos.y = box.Min.y + detoffset;
 
-    if (floorn = floorman->GetNearestFloors(pos, &fp))
+    if ((floorn = floorman->GetNearestFloors(pos, &fp)))
     {
 
         VxVector up;
@@ -194,6 +194,8 @@ int DoObjectKeepOnFloorV2Point(const CKBehaviorContext &behcontext)
         case CKFLOOR_UP:
             pos.y += fp.m_UpDistance + offset + detoffset;
             up = fp.m_UpNormal;
+            break;
+        default:
             break;
         }
 
@@ -227,7 +229,7 @@ int DoObjectKeepOnFloorV2Point(const CKBehaviorContext &behcontext)
                 entity->SetWorldMatrix(wmat);
 
                 fp.Clear();
-                if (floorn = floorman->GetNearestFloors(oldpos, &fp))
+                if ((floorn = floorman->GetNearestFloors(oldpos, &fp)))
                 {
 
                     int faces[FACESMAXNUMBER];
@@ -240,6 +242,8 @@ int DoObjectKeepOnFloorV2Point(const CKBehaviorContext &behcontext)
                         break;
                     case CKFLOOR_UP:
                         floor = (CK3dEntity *)ctx->GetObject(fp.m_UpFloor);
+                        break;
+                    default:
                         break;
                     }
 
@@ -303,6 +307,8 @@ int DoObjectKeepOnFloorV2Point(const CKBehaviorContext &behcontext)
                         newpos.y += fp.m_UpDistance + offset + detoffset;
                         up = fp.m_UpNormal;
                         break;
+                    default:
+                        break;
                     }
 
                     newpos.y += (box.Max.y - box.Min.y) * 0.5f;
@@ -344,6 +350,8 @@ int DoObjectKeepOnFloorV2Point(const CKBehaviorContext &behcontext)
         floorman->ReadAttributeValues((CK3dEntity *)ctx->GetObject(fp.m_DownFloor), NULL, NULL, &type);
         distance = fp.m_DownDistance;
         slope = acosf(DotProduct(wup, Normalize(fp.m_DownNormal)));
+        break;
+    default:
         break;
     }
     beh->SetOutputParameterValue(1, &type);
@@ -477,7 +485,7 @@ int DoObjectKeepOnFloorV2Box(const CKBehaviorContext &behcontext)
             continue;
         fp.Clear();
         pts[i].y += detoffset;
-        if (floorn = floorman->GetNearestFloors(pts[i], &fp))
+        if ((floorn = floorman->GetNearestFloors(pts[i], &fp)))
         {
             switch (floorn)
             {
@@ -498,6 +506,8 @@ int DoObjectKeepOnFloorV2Box(const CKBehaviorContext &behcontext)
                     distmin = fp.m_UpDistance;
                     up = TRUE;
                 }
+                break;
+            default:
                 break;
             }
         }
@@ -544,6 +554,8 @@ int DoObjectKeepOnFloorV2Box(const CKBehaviorContext &behcontext)
             break;
         case CKFLOOR_DOWN:
             fp.m_DownNormal = vup;
+            break;
+        default:
             break;
         }
     }
@@ -631,6 +643,8 @@ int DoObjectKeepOnFloorV2Box(const CKBehaviorContext &behcontext)
                             break;
                         case CKFLOOR_DOWN:
                             floorobject = (CK3dEntity *)ctx->GetObject(oldfps[i].m_DownFloor);
+                            break;
+                        default:
                             break;
                         }
 
@@ -766,6 +780,8 @@ int DoObjectKeepOnFloorV2Box(const CKBehaviorContext &behcontext)
                                 up = TRUE;
                             }
                             break;
+                        default:
+                            break;
                         }
                     }
 
@@ -791,6 +807,8 @@ int DoObjectKeepOnFloorV2Box(const CKBehaviorContext &behcontext)
                         fp.m_DownFloor = fps[i].m_DownFloor;
                         fp.m_DownNormal = vup;
                         break;
+                    default:
+                        break;
                     }
                 }
             } // end if(floorn)
@@ -813,6 +831,8 @@ int DoObjectKeepOnFloorV2Box(const CKBehaviorContext &behcontext)
         beh->SetOutputParameterValue(0, &(fp.m_DownFloor));
         floorman->ReadAttributeValues((CK3dEntity *)ctx->GetObject(fp.m_DownFloor), NULL, NULL, &type);
         slope = acosf(DotProduct(wup, Normalize(fp.m_DownNormal)));
+        break;
+    default:
         break;
     }
     beh->SetOutputParameterValue(1, &type);

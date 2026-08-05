@@ -77,7 +77,7 @@ int DoObjectKeepOnFloor(const CKBehaviorContext &behcontext)
     VxVector pos = (box.Max + box.Min) * 0.5f;
     pos.y = box.Min.y;
 
-    if (floorn = floorman->GetNearestFloors(pos, &fp))
+    if ((floorn = floorman->GetNearestFloors(pos, &fp)))
     {
         switch (floorn)
         {
@@ -86,6 +86,8 @@ int DoObjectKeepOnFloor(const CKBehaviorContext &behcontext)
             break;
         case CKFLOOR_UP:
             entity->Translate3f(0, fp.m_UpDistance, 0);
+            break;
+        default:
             break;
         }
     }
