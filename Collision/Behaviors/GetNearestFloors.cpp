@@ -137,7 +137,7 @@ int DoGetNearestFloors(const CKBehaviorContext &behcontext)
     case CKFLOOR_DOWN:
         beh->ActivateOutput(1);
         break;
-    default:
+    case CKFLOOR_NOFLOOR:
         break;
     }
 

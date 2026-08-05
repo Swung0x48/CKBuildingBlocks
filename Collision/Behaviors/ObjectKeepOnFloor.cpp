@@ -87,7 +87,7 @@ int DoObjectKeepOnFloor(const CKBehaviorContext &behcontext)
         case CKFLOOR_UP:
             entity->Translate3f(0, fp.m_UpDistance, 0);
             break;
-        default:
+        case CKFLOOR_NOFLOOR:
             break;
         }
     }
