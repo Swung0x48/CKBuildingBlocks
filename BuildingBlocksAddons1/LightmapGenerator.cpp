@@ -1521,7 +1521,7 @@ int LightmapGenerator::LightMapsRender(CKRenderContext *dev, CKRenderObject *ro,
 #endif
 
                     // we need to set an "unique" color
-                    CKDWORD uniqueColor = RGBAFTOCOLOR(float(rand()) / RAND_MAX, float(rand()) / RAND_MAX, float(rand()) / RAND_MAX, 1.0f);
+                    CKDWORD uniqueColor = RGBAFTOCOLOR(float(rand()) / static_cast<float>(RAND_MAX), float(rand()) / static_cast<float>(RAND_MAX), float(rand()) / static_cast<float>(RAND_MAX), 1.0f);
 
                     // color filling
 #if CKVERSION == 0x13022002 || CKVERSION == 0x05082002
@@ -1734,7 +1734,7 @@ LightmapGenerator::ComputeTransparency(const CK3dEntity &ent, const VxIntersecti
 
     VxColor diffuse = mat->GetDiffuse();
     CKTexture *tex;
-    if (tex = mat->GetTexture())
+    if ((tex = mat->GetTexture()))
     {
         VXTEXTURE_ADDRESSMODE add = mat->GetTextureAddressMode();
         float u = desc.TexU;
@@ -1761,7 +1761,7 @@ LightmapGenerator::ComputeTransparency(const CK3dEntity &ent, const VxIntersecti
             else if (v > 1.0f)
                 v = 1.0f;
             break;
-        case VXTEXTURE_ADDRESSMIRROR:
+        case VXTEXTURE_ADDRESSMIRROR: {
             int tu = (int)u;
             u -= tu;
             if (u < 0.0f)
@@ -1775,6 +1775,9 @@ LightmapGenerator::ComputeTransparency(const CK3dEntity &ent, const VxIntersecti
                 v += 1.0f;
             if (tv & 1) // odd => invert
                 v = 1.0f - v;
+            break;
+        }
+        default:
             break;
         };
 
@@ -1984,6 +1987,8 @@ void LightmapGenerator::ComputePointColor(VxColor &lumcolor, const VxVector &wor
             }
         }
         break;
+        default:
+            break;
         }
     } // Lights for
 }
