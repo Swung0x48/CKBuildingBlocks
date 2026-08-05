@@ -9,9 +9,9 @@
 // const int HALF_RAND = (RAND_MAX / 2);
 // const float INVHALF_RAND = 1.0f/HALF_RAND;
 
-#define HALF_RAND (RAND_MAX / 2.0f)
-#define INVHALF_RAND 1.0f / (HALF_RAND)
-#define INV_RAND 1.0f / (RAND_MAX)
+#define HALF_RAND ((float)RAND_MAX / 2.0f)
+#define INVHALF_RAND (1.0f / HALF_RAND)
+#define INV_RAND (1.0f / (float)RAND_MAX)
 
 #define RANDNUM ((float)(rand() - HALF_RAND) * INVHALF_RAND)
 #define RANDNUMP ((float)rand() * INV_RAND)
