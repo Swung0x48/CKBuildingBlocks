@@ -112,7 +112,7 @@ int SwitchIfSquare(const CKBehaviorContext &behcontext)
             --count;
             layer_type = 1;
             beh->GetInputParameterValue(count + 2, &layer_type);
-            if (layer = grid->GetLayer(layer_type))
+            if ((layer = grid->GetLayer(layer_type)))
             {
                 value = 0;
                 layer->GetValue(x, y, &value);
@@ -152,7 +152,7 @@ CKERROR SwitchIfSquareCallBack(const CKBehaviorContext &behcontext)
 
         while (c_out < c_pin) // we must add 'Outputs'
         {
-            sprintf(out_str, "Layer%d", c_out + 1);
+            snprintf(out_str, sizeof(out_str), "Layer%d", c_out + 1);
             beh->AddOutput(out_str);
             c_out++;
         }
@@ -166,7 +166,7 @@ CKERROR SwitchIfSquareCallBack(const CKBehaviorContext &behcontext)
         CKParameter *pout;
         while (c_pout < c_pin) // we must add 'Output Params'
         {
-            sprintf(out_str, "Value%d", c_pout + 1);
+            snprintf(out_str, sizeof(out_str), "Value%d", c_pout + 1);
             beh->CreateOutputParameter(out_str, CKPGUID_INT);
             c_pout++;
         }
@@ -179,7 +179,7 @@ CKERROR SwitchIfSquareCallBack(const CKBehaviorContext &behcontext)
         }
 
         CKParameterIn *pin1;
-        if (pin1 = beh->GetInputParameter(0))
+        if ((pin1 = beh->GetInputParameter(0)))
         {
 
             CKParameterIn *pin;
@@ -191,7 +191,7 @@ CKERROR SwitchIfSquareCallBack(const CKBehaviorContext &behcontext)
                 if (pin->GetGUID() != CKPGUID_LAYERTYPE)
                 {
                     pin->SetGUID(CKPGUID_LAYERTYPE);
-                    if (pout = pin->GetRealSource())
+                    if ((pout = pin->GetRealSource()))
                     {
                         pout->SetGUID(CKPGUID_LAYERTYPE);
                     }

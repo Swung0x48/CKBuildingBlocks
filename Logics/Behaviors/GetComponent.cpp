@@ -93,7 +93,7 @@ int GetComponent(const CKBehaviorContext &behcontext)
     beh->ActivateInput(0, FALSE);
     beh->ActivateOutput(0);
 
-    if (pin = beh->GetInputParameter(0))
+    if ((pin = beh->GetInputParameter(0)))
     {
         type = pin->GetGUID();
 
@@ -263,7 +263,7 @@ CKERROR GetComponentCallBack(const CKBehaviorContext &behcontext)
                     }
                     else
                     { // Output must be created
-                        sprintf(out_str, "Component %d", i + 1);
+                        snprintf(out_str, sizeof(out_str), "Component %d", i + 1);
                         beh->CreateOutputParameter(out_str, CKPGUID_FLOAT);
                     }
                 }
@@ -290,7 +290,7 @@ CKERROR GetComponentCallBack(const CKBehaviorContext &behcontext)
                     }
                     else
                     { // Output must be created
-                        sprintf(out_str, "Component %d", i + 1);
+                        snprintf(out_str, sizeof(out_str), "Component %d", i + 1);
                         beh->CreateOutputParameter(out_str, CKPGUID_FLOAT);
                     }
                 }
@@ -317,7 +317,7 @@ CKERROR GetComponentCallBack(const CKBehaviorContext &behcontext)
                     }
                     else
                     { // Output must be created
-                        sprintf(out_str, "Component %d", i + 1);
+                        snprintf(out_str, sizeof(out_str), "Component %d", i + 1);
                         beh->CreateOutputParameter(out_str, CKPGUID_ANGLE);
                     }
                 }
@@ -344,7 +344,7 @@ CKERROR GetComponentCallBack(const CKBehaviorContext &behcontext)
                     }
                     else
                     { // Output must be created
-                        sprintf(out_str, "Component %d", i + 1);
+                        snprintf(out_str, sizeof(out_str), "Component %d", i + 1);
                         beh->CreateOutputParameter(out_str, CKPGUID_FLOAT);
                     }
                 }
@@ -371,7 +371,7 @@ CKERROR GetComponentCallBack(const CKBehaviorContext &behcontext)
                     }
                     else
                     { // Output must be created
-                        sprintf(out_str, "Component %d", i + 1);
+                        snprintf(out_str, sizeof(out_str), "Component %d", i + 1);
                         beh->CreateOutputParameter(out_str, CKPGUID_VECTOR);
                     }
                 }
@@ -398,7 +398,7 @@ CKERROR GetComponentCallBack(const CKBehaviorContext &behcontext)
                     }
                     else
                     { // Output must be created
-                        sprintf(out_str, "Component %d", i + 1);
+                        snprintf(out_str, sizeof(out_str), "Component %d", i + 1);
                         beh->CreateOutputParameter(out_str, CKPGUID_2DVECTOR);
                     }
                 }
@@ -425,7 +425,7 @@ CKERROR GetComponentCallBack(const CKBehaviorContext &behcontext)
                     }
                     else
                     { // Output must be created
-                        sprintf(out_str, "Component %d", i + 1);
+                        snprintf(out_str, sizeof(out_str), "Component %d", i + 1);
                         beh->CreateOutputParameter(out_str, CKPGUID_VECTOR);
                     }
                 }
@@ -454,7 +454,7 @@ CKERROR GetComponentCallBack(const CKBehaviorContext &behcontext)
                     }
                     else
                     { // Output must be created
-                        sprintf(out_str, "Component %d", i + 1);
+                        snprintf(out_str, sizeof(out_str), "Component %d", i + 1);
                         beh->CreateOutputParameter(out_str, data->Guids[i]);
                     }
                 }

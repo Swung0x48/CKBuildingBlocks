@@ -120,7 +120,7 @@ CKERROR ParameterSelectorCallBack(const CKBehaviorContext &behcontext)
         CKParameterIn *pin;
         CKParameterOut *pout;
 
-        if (pout = beh->GetOutputParameter(0))
+        if ((pout = beh->GetOutputParameter(0)))
         {
 
             int type_out = pout->GetType();
@@ -129,7 +129,7 @@ CKERROR ParameterSelectorCallBack(const CKBehaviorContext &behcontext)
 
             while (c_in > c_pin) // we must add 'Input Parameters'
             {
-                sprintf(in_str, "pIn %d", c_pin);
+                snprintf(in_str, sizeof(in_str), "pIn %d", c_pin);
                 CKParameterIn *pin = beh->CreateInputParameter(in_str, type_out);
                 c_pin++;
             }

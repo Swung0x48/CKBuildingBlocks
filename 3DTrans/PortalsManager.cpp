@@ -620,11 +620,12 @@ bool PortalsManager::IsObjectOccluded(CK3dEntity *iEntity, const XArray<VxPlane>
         const VxPlane &plane = *it;
 
         float d = plane.Classify(center);
-        if (d > -radius)
+        if (d > -radius) {
             if (d > 0.0f)
                 return false;
             else
                 clipped = true;
+        }
     }
 
     if (!clipped)
@@ -912,13 +913,13 @@ PortalsManager::Occluder::Occluder(CKMesh *iMesh)
 
         if (freeMem)
         {                                                                    // second time
-            sprintf(flags, "qhull Qs QJ%G C-0 Pp W1e-6 E1.0e-8", randomEps); // "qhull QbB Pp"
+            snprintf(flags, sizeof(flags), "qhull Qs QJ%G C-0 Pp W1e-6 E1.0e-8", randomEps); // "qhull QbB Pp"
 
             qh_freeqhull(qh, !qh_ALL); // free memory from precedent call
         }
         else
         { // first time
-            sprintf(flags, "qhull Qs Pp C-0 W1e-6 E1.0e-8 Tv");
+            snprintf(flags, sizeof(flags), "qhull Qs Pp C-0 W1e-6 E1.0e-8 Tv");
         }
         exitcode = qh_new_qhull(qh, 3, numpoints, points, False, flags, NULL, stderr);
         freeMem = true;

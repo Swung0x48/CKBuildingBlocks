@@ -553,7 +553,7 @@ CKERROR LayerSliderCallBack(const CKBehaviorContext &behcontext)
             if (pin->GetGUID() != CKPGUID_LAYERTYPE)
             {
                 pin->SetGUID(CKPGUID_LAYERTYPE);
-                if (pout = pin->GetRealSource())
+                if ((pout = pin->GetRealSource()))
                 {
                     pout->SetGUID(CKPGUID_LAYERTYPE);
                 }
@@ -602,7 +602,7 @@ CKERROR LayerSliderCallBack(const CKBehaviorContext &behcontext)
         { // add output
             for (int a = 0; a < (dif + 1); a++)
             {
-                sprintf(str, "contact%d", beh->GetOutputParameterCount());
+                snprintf(str, sizeof(str), "contact%d", beh->GetOutputParameterCount());
                 beh->CreateOutputParameter(str, CKPGUID_VECTOR);
             }
         }

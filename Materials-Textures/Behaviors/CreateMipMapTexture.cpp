@@ -68,7 +68,7 @@ CKERROR CreateMipMapTextureCallBack(const CKBehaviorContext &behcontext)
         CKParameterIn *pin;
         for (int a = 1, b = 2; a < c_pin; ++a, b *= 2)
         {
-            sprintf(pin_str, "Size/%d", b);
+            snprintf(pin_str, sizeof(pin_str), "Size/%d", b);
             pin = beh->GetInputParameter(a);
             pin->SetGUID(CKPGUID_TEXTURE, TRUE, pin_str);
         }
@@ -81,7 +81,7 @@ CKERROR CreateMipMapTextureCallBack(const CKBehaviorContext &behcontext)
 
 /******************************************************/
 /*   Bbehavior Function
-/******************************************************/
+ ******************************************************/
 int CreateMipMapTexture(const CKBehaviorContext &behcontext)
 {
 

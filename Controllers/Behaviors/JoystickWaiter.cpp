@@ -524,7 +524,7 @@ CKERROR JoystickWaiterCallBack(const CKBehaviorContext &behcontext)
         // Outputs Creation/Deletion Of Axis Events
         if (f & F_X)
         {
-            if (out = beh->GetOutput(pos))
+            if ((out = beh->GetOutput(pos)))
             {
                 out->SetName("Axis X Moved");
             }
@@ -534,7 +534,7 @@ CKERROR JoystickWaiterCallBack(const CKBehaviorContext &behcontext)
         }
         if (f & F_Y)
         {
-            if (out = beh->GetOutput(pos))
+            if ((out = beh->GetOutput(pos)))
             {
                 out->SetName("Axis Y Moved");
             }
@@ -544,7 +544,7 @@ CKERROR JoystickWaiterCallBack(const CKBehaviorContext &behcontext)
         }
         if (f & F_Z)
         {
-            if (out = beh->GetOutput(pos))
+            if ((out = beh->GetOutput(pos)))
             {
                 out->SetName("Axis Z Moved");
             }
@@ -554,7 +554,7 @@ CKERROR JoystickWaiterCallBack(const CKBehaviorContext &behcontext)
         }
         if (f & F_RX)
         {
-            if (out = beh->GetOutput(pos))
+            if ((out = beh->GetOutput(pos)))
             {
                 out->SetName("Rotation X Moved");
             }
@@ -564,7 +564,7 @@ CKERROR JoystickWaiterCallBack(const CKBehaviorContext &behcontext)
         }
         if (f & F_RY)
         {
-            if (out = beh->GetOutput(pos))
+            if ((out = beh->GetOutput(pos)))
             {
                 out->SetName("Rotation Y Moved");
             }
@@ -574,7 +574,7 @@ CKERROR JoystickWaiterCallBack(const CKBehaviorContext &behcontext)
         }
         if (f & F_RZ)
         {
-            if (out = beh->GetOutput(pos))
+            if ((out = beh->GetOutput(pos)))
             {
                 out->SetName("Rotation Z Moved");
             }
@@ -584,7 +584,7 @@ CKERROR JoystickWaiterCallBack(const CKBehaviorContext &behcontext)
         }
         if (f & F_S1)
         {
-            if (out = beh->GetOutput(pos))
+            if ((out = beh->GetOutput(pos)))
             {
                 out->SetName("Slider 1 Moved");
             }
@@ -594,7 +594,7 @@ CKERROR JoystickWaiterCallBack(const CKBehaviorContext &behcontext)
         }
         if (f & F_S2)
         {
-            if (out = beh->GetOutput(pos))
+            if ((out = beh->GetOutput(pos)))
             {
                 out->SetName("Slider 2 Moved");
             }
@@ -604,14 +604,14 @@ CKERROR JoystickWaiterCallBack(const CKBehaviorContext &behcontext)
         }
         if (f & F_POV)
         {
-            if (out = beh->GetOutput(pos))
+            if ((out = beh->GetOutput(pos)))
             {
                 out->SetName("Point Of View Moved");
             }
             else
                 beh->AddOutput("Point Of View Moved");
             ++pos;
-            if (out = beh->GetOutput(pos))
+            if ((out = beh->GetOutput(pos)))
             {
                 out->SetName("Point Of View Centered");
             }
@@ -629,8 +629,8 @@ CKERROR JoystickWaiterCallBack(const CKBehaviorContext &behcontext)
         {
             if (f & mask)
             { // the button is required
-                sprintf(buffer, "Button %d Pressed", i + 1);
-                if (out = beh->GetOutput(pos))
+                snprintf(buffer, sizeof(buffer), "Button %d Pressed", i + 1);
+                if ((out = beh->GetOutput(pos)))
                 {
                     out->SetName(buffer);
                 }

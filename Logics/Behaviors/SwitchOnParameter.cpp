@@ -105,7 +105,7 @@ int SwitchOnParameter(const CKBehaviorContext &behcontext)
     for (int i = 1; i < count_param_in; ++i)
     {
         pin = NULL;
-        if (pin = beh->GetInputParameter(i))
+        if ((pin = beh->GetInputParameter(i)))
             ;
         else
             return 0;
@@ -113,7 +113,7 @@ int SwitchOnParameter(const CKBehaviorContext &behcontext)
         if (pin->GetType() == tester_type)
         {
             real = NULL;
-            if (real = pin->GetRealSource())
+            if ((real = pin->GetRealSource()))
             {
                 param_ptr = real->GetReadDataPtr();
 
@@ -203,7 +203,7 @@ CKERROR SwitchOnParameterCallBack(const CKBehaviorContext &behcontext)
 
         while (c_pin < c_out) // we must add 'Input Param'
         {
-            sprintf(pin_str, "Pin %d", c_pin);
+            snprintf(pin_str, sizeof(pin_str), "Pin %d", c_pin);
             beh->CreateInputParameter(pin_str, type_1);
             ++c_pin;
         }

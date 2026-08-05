@@ -1,7 +1,7 @@
 /*************************************************************************/
 /*	File : LODManager.cpp
-/*
-/*************************************************************************/
+ *
+ *************************************************************************/
 #include "CKAll.h"
 #include "LODManager.h"
 
@@ -19,9 +19,9 @@ int LODPostRender(CKRenderContext *dev, CKRenderObject *rent, void *arg);
 /*****************************************************/
 /*****************************************************/
 /*
-/*  Misc Functions
-/*
-/*****************************************************/
+ *  Misc Functions
+ *
+ *****************************************************/
 /*****************************************************/
 float CalcInvScreenWidth(CKContext *ctx, CKRenderContext *rc)
 {
@@ -36,9 +36,9 @@ float CalcInvScreenWidth(CKContext *ctx, CKRenderContext *rc)
 /*****************************************************/
 /*****************************************************/
 /*
-/*  LOD Options Parameter
-/*
-/*****************************************************/
+ *  LOD Options Parameter
+ *
+ *****************************************************/
 /*****************************************************/
 
 /*-- LOD Options string conversion function --*/
@@ -81,7 +81,7 @@ int LODOptionsStringFunc(CKParameter *p, char *value, CKBOOL ReadFrom)
     {
         p->GetValue(&lo, FALSE);
         char temp[128] = {0};
-        sprintf(temp, "%s:%s:%s:%s:%g:%g:%g:%g:%g:%g",
+        snprintf(temp, sizeof(temp), "%s:%s:%s:%s:%g:%g:%g:%g:%g:%g",
                 (lo.flags & LODMultiMesh) ? "TRUE" : "FALSE",
                 (lo.flags & LODAnimation) ? "TRUE" : "FALSE",
                 (lo.flags & LODPatchMesh) ? "TRUE" : "FALSE",
@@ -108,9 +108,9 @@ CKERROR LODOptionsParameterCreator(CKParameter *p)
 /*****************************************************/
 /*****************************************************/
 /*
-/*  LOD Manager Part
-/*
-/*****************************************************/
+ *  LOD Manager Part
+ *
+ *****************************************************/
 /*****************************************************/
 
 // Constructor
@@ -365,7 +365,7 @@ void LODManager::SetObjectLOD(CK3dEntity &ent, const float faceProportion, const
                 VxColor newDiffuse;
                 for (int a = 0; a < matCount; ++a)
                 {
-                    if (currentMaterial = m_CurrentMesh->GetMaterial(a))
+                    if ((currentMaterial = m_CurrentMesh->GetMaterial(a)))
                     {
                         // stock material
                         m_StockedAlphaInfo[a].srcmode = currentMaterial->GetSourceBlend();
@@ -559,7 +559,7 @@ int LODPostRender(CKRenderContext *rc, CKRenderObject *rent, void *arg)
         CKMaterial *currentMaterial;
         for (int a = 0; a < matCount; ++a)
         {
-            if (currentMaterial = currentMesh->GetMaterial(a))
+            if ((currentMaterial = currentMesh->GetMaterial(a)))
             {
 
                 const LODstockedAlphaInfo &smi = lm->m_StockedAlphaInfo[a];

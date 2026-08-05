@@ -130,7 +130,7 @@ CKERROR PerSecondCallBack(const CKBehaviorContext &behcontext)
         for (int a = 0; a < pOutCount; ++a)
         {
 
-            if (pout = beh->GetOutputParameter(a))
+            if ((pout = beh->GetOutputParameter(a)))
             {
                 guid_out = pout->GetGUID();
 
@@ -151,7 +151,7 @@ CKERROR PerSecondCallBack(const CKBehaviorContext &behcontext)
                 else
                 {
                     // create input if not here
-                    sprintf(str, "pIn %d", a);
+                    snprintf(str, sizeof(str), "pIn %d", a);
                     beh->CreateInputParameter(str, guid_out);
                 }
             }

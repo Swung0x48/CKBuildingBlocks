@@ -179,7 +179,7 @@ CKERROR SkinJoinCallBackObject(const CKBehaviorContext &behcontext)
             pin = beh->GetInputParameter(a);
             if ((pin->GetGUID() != CKPGUID_OBJECT3D) && (pin->GetGUID() != CKPGUID_3DENTITY))
             {
-                sprintf(str, "Object %d", a);
+                snprintf(str, sizeof(str), "Object %d", a);
                 pin->SetGUID(CKPGUID_OBJECT3D, TRUE, str);
             }
         }
@@ -198,10 +198,10 @@ CKERROR SkinJoinCallBackObject(const CKBehaviorContext &behcontext)
 
         for (a = 1; a < obj_count; a++)
         {
-            if (obj = (CK3dObject *)beh->GetInputParameterObject(a))
+            if ((obj = (CK3dObject *)beh->GetInputParameterObject(a)))
             {
                 obj_array->PushBack(obj->GetID());
-                if (mesh_obj = obj->GetCurrentMesh())
+                if ((mesh_obj = obj->GetCurrentMesh()))
                 {
                     total_vertex_count += mesh_obj->GetVertexCount();
                 }
@@ -223,7 +223,7 @@ CKERROR SkinJoinCallBackObject(const CKBehaviorContext &behcontext)
         for (obj_index = 0, ids = obj_array->Begin(); ids != obj_array->End(); ++ids, obj_index++)
         {
             obj = (CK3dObject *)behcontext.Context->GetObject(*ids);
-            if (mesh_obj = obj->GetCurrentMesh())
+            if ((mesh_obj = obj->GetCurrentMesh()))
             {
 
                 const VxMatrix &tmp_matrix = obj->GetWorldMatrix();
@@ -242,10 +242,10 @@ CKERROR SkinJoinCallBackObject(const CKBehaviorContext &behcontext)
 
         //------------- fill correspondance array
         CK3dObject *ent;
-        if (ent = (CK3dObject *)beh->GetOwner())
+        if ((ent = (CK3dObject *)beh->GetOwner()))
         {
             CKMesh *mesh;
-            if (mesh = ent->GetCurrentMesh())
+            if ((mesh = ent->GetCurrentMesh()))
             {
 
                 int count = mesh->GetVertexCount();
