@@ -113,7 +113,7 @@ CKERROR FindSubStringCallBack(const CKBehaviorContext &behcontext)
         {
             int idx = beh->GetInputParameterCount();
             char name[64];
-            sprintf(name, "String %d", idx);
+            snprintf(name, sizeof(name), "String %d", idx);
             beh->CreateInputParameter(name, CKPGUID_STRING);
         }
 
@@ -128,7 +128,7 @@ CKERROR FindSubStringCallBack(const CKBehaviorContext &behcontext)
         {
             int idx = beh->GetOutputCount();
             char name[64];
-            sprintf(name, "StringOut %d", idx);
+            snprintf(name, sizeof(name), "StringOut %d", idx);
             beh->AddOutput(name);
         }
     }

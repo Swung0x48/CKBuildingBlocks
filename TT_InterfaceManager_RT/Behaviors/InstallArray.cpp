@@ -84,7 +84,7 @@ int InstallArray(const CKBehaviorContext &behcontext)
         if (bShowMessage)
         {
             char *msg = new char[256];
-            sprintf(msg, " '%s'  from file '%s' installed to manager", array->GetName(), cmo);
+            snprintf(msg, 256, " '%s'  from file '%s' installed to manager", array->GetName(), cmo);
             context->OutputToConsole(msg, FALSE);
             delete[] msg;
         }

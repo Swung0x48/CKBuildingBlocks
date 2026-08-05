@@ -127,7 +127,7 @@ CKERROR GridPathInitCallback(const CKBehaviorContext &behcontext)
         // And rename to "layer i".
         for (int i = 1; i < beh->GetInputParameterCount(); i++)
         {
-            sprintf(name, "Layer %d", i + 1);
+            snprintf(name, sizeof(name), "Layer %d", i + 1);
             pin = beh->GetInputParameter(i);
             pin->SetGUID(CKPGUID_LAYERTYPE);
             pin->SetName(name);

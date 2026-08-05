@@ -277,7 +277,7 @@ CKERROR ReadRegistryCallBack(const CKBehaviorContext &behcontext)
         CKParameterOut *data = beh->GetOutputParameter(0);
         if (!data)
         {
-            sprintf(buffer, "Data");
+            snprintf(buffer, sizeof(buffer), "Data");
             data = beh->CreateOutputParameter(buffer, CKPGUID_INT);
         }
 
@@ -289,7 +289,7 @@ CKERROR ReadRegistryCallBack(const CKBehaviorContext &behcontext)
                 guid != CKPGUID_BOOL &&
                 guid != CKPGUID_STRING)
             {
-                sprintf(buffer, "Data");
+                snprintf(buffer, sizeof(buffer), "Data");
                 context->DestroyObject(data);
                 data = beh->CreateOutputParameter(buffer, CKPGUID_INT);
                 if (data)

@@ -261,7 +261,7 @@ CKERROR WriteRegistryCallBack(const CKBehaviorContext &behcontext)
         CKParameterIn *data = beh->GetInputParameter(3);
         if (!data)
         {
-            sprintf(buffer, "Data");
+            snprintf(buffer, sizeof(buffer), "Data");
             data = beh->CreateInputParameter(buffer, CKPGUID_INT);
         }
 
@@ -273,7 +273,7 @@ CKERROR WriteRegistryCallBack(const CKBehaviorContext &behcontext)
                 guid != CKPGUID_BOOL &&
                 guid != CKPGUID_STRING)
             {
-                sprintf(buffer, "Data");
+                snprintf(buffer, sizeof(buffer), "Data");
                 data->SetGUID(CKPGUID_INT, TRUE, buffer);
                 context->OutputToConsoleExBeep("TT_WriteRegistry: ArrayColumnType invalid(use string/bool/int/float)");
             }

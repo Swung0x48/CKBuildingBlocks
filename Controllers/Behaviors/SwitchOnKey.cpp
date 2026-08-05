@@ -128,7 +128,7 @@ CKERROR SwitchOnKeyCallBack(const CKBehaviorContext &behcontext)
 
         while (c_pin < c_out)
         { // we must add Input Params
-            sprintf(pin_str, "Key %d", c_pin);
+            snprintf(pin_str, sizeof(pin_str), "Key %d", c_pin);
             beh->CreateInputParameter(pin_str, CKPGUID_KEY);
             ++c_pin;
         }

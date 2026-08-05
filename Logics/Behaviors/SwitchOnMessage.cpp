@@ -143,7 +143,7 @@ CKERROR SwitchOnMessageCallBack(const CKBehaviorContext &behcontext)
 
         while (c_pin < c_out)
         { // we must add 'Input Param'
-            sprintf(pin_str, "Message %d", c_pin);
+            snprintf(pin_str, sizeof(pin_str), "Message %d", c_pin);
             beh->CreateInputParameter(pin_str, CKPGUID_MESSAGE);
             ++c_pin;
         }

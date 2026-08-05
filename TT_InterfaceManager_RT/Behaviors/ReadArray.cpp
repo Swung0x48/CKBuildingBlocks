@@ -85,7 +85,7 @@ int ReadArray(const CKBehaviorContext &behcontext)
         if (bShowMessage)
         {
             char *msg = new char[128];
-            sprintf(msg, " '%s'  from file '%s' read from manager", array->GetName(), cmo);
+            snprintf(msg, 128, " '%s'  from file '%s' read from manager", array->GetName(), cmo);
             context->OutputToConsole(msg, FALSE);
             delete[] msg;
         }

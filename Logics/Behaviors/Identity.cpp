@@ -106,13 +106,13 @@ CKERROR IdentityCallBack(const CKBehaviorContext &behcontext)
                 if (pout->GetType() != pin->GetType())
                 {
                     pout->SetType(pin->GetType());
-                    sprintf(str, "pOut %d", i);
+                    snprintf(str, sizeof(str), "pOut %d", i);
                     pout->SetName(str);
                 }
             }
             else // we have to create the output
             {
-                sprintf(str, "pOut %d", i);
+                snprintf(str, sizeof(str), "pOut %d", i);
                 beh->CreateOutputParameter(str, pin->GetType());
             }
         }

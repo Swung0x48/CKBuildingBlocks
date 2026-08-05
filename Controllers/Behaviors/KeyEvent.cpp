@@ -145,7 +145,7 @@ CKERROR KeyEventCallBack(const CKBehaviorContext &behcontext)
             pin = beh->GetInputParameter(a);
             if (pin->GetGUID() != CKPGUID_KEY)
             {
-                sprintf(name, "Key Waited %d", a);
+                snprintf(name, sizeof(name), "Key Waited %d", a);
                 pin->SetName(name);
                 pin->SetGUID(CKPGUID_KEY);
             }

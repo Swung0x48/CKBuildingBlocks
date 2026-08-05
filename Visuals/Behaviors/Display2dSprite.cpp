@@ -125,7 +125,7 @@ CKERROR Display2DSpriteCallBack(const CKBehaviorContext &behcontext)
             }
             else
             {
-                sprintf(in_str, "Pos X");
+                snprintf(in_str, sizeof(in_str), "Pos X");
                 beh->CreateInputParameter(in_str, CKPGUID_FLOAT);
             }
             ++in;
@@ -144,7 +144,7 @@ CKERROR Display2DSpriteCallBack(const CKBehaviorContext &behcontext)
             }
             else
             {
-                sprintf(in_str, "Pos Y");
+                snprintf(in_str, sizeof(in_str), "Pos Y");
                 beh->CreateInputParameter(in_str, CKPGUID_FLOAT);
             }
             ++in;
@@ -166,7 +166,7 @@ CKERROR Display2DSpriteCallBack(const CKBehaviorContext &behcontext)
             }
             else
             {
-                sprintf(in_str, "Z Order");
+                snprintf(in_str, sizeof(in_str), "Z Order");
                 beh->CreateInputParameter(in_str, CKPGUID_INT);
             }
             ++in;
@@ -188,7 +188,7 @@ CKERROR Display2DSpriteCallBack(const CKBehaviorContext &behcontext)
             }
             else
             {
-                sprintf(in_str, "Background");
+                snprintf(in_str, sizeof(in_str), "Background");
                 beh->CreateInputParameter(in_str, CKPGUID_BOOL);
             }
             ++in;
@@ -210,7 +210,7 @@ CKERROR Display2DSpriteCallBack(const CKBehaviorContext &behcontext)
             }
             else
             {
-                sprintf(in_str, "Size X");
+                snprintf(in_str, sizeof(in_str), "Size X");
                 beh->CreateInputParameter(in_str, CKPGUID_FLOAT);
             }
             ++in;
@@ -229,7 +229,7 @@ CKERROR Display2DSpriteCallBack(const CKBehaviorContext &behcontext)
             }
             else
             {
-                sprintf(in_str, "Size Y");
+                snprintf(in_str, sizeof(in_str), "Size Y");
                 beh->CreateInputParameter(in_str, CKPGUID_FLOAT);
             }
             ++in;
@@ -250,7 +250,7 @@ CKERROR Display2DSpriteCallBack(const CKBehaviorContext &behcontext)
             }
             else
             {
-                sprintf(in_str, "Pickable");
+                snprintf(in_str, sizeof(in_str), "Pickable");
                 beh->CreateInputParameter(in_str, CKPGUID_BOOL);
             }
             ++in;
@@ -271,7 +271,7 @@ CKERROR Display2DSpriteCallBack(const CKBehaviorContext &behcontext)
             }
             else
             {
-                sprintf(in_str, "Clip To Parent");
+                snprintf(in_str, sizeof(in_str), "Clip To Parent");
                 beh->CreateInputParameter(in_str, CKPGUID_BOOL);
             }
             ++in;
@@ -292,7 +292,7 @@ CKERROR Display2DSpriteCallBack(const CKBehaviorContext &behcontext)
             }
             else
             {
-                sprintf(in_str, "Stick Left");
+                snprintf(in_str, sizeof(in_str), "Stick Left");
                 beh->CreateInputParameter(in_str, CKPGUID_BOOL);
             }
             ++in;
@@ -311,7 +311,7 @@ CKERROR Display2DSpriteCallBack(const CKBehaviorContext &behcontext)
             }
             else
             {
-                sprintf(in_str, "Stick Right");
+                snprintf(in_str, sizeof(in_str), "Stick Right");
                 beh->CreateInputParameter(in_str, CKPGUID_BOOL);
             }
             ++in;
@@ -330,7 +330,7 @@ CKERROR Display2DSpriteCallBack(const CKBehaviorContext &behcontext)
             }
             else
             {
-                sprintf(in_str, "Stick Top");
+                snprintf(in_str, sizeof(in_str), "Stick Top");
                 beh->CreateInputParameter(in_str, CKPGUID_BOOL);
             }
             ++in;
@@ -349,7 +349,7 @@ CKERROR Display2DSpriteCallBack(const CKBehaviorContext &behcontext)
             }
             else
             {
-                sprintf(in_str, "Stick Bottom");
+                snprintf(in_str, sizeof(in_str), "Stick Bottom");
                 beh->CreateInputParameter(in_str, CKPGUID_BOOL);
             }
             ++in;

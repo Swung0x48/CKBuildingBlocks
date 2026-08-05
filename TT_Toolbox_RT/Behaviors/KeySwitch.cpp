@@ -87,7 +87,7 @@ CKERROR KeySwitchCallBack(const CKBehaviorContext &behcontext)
             {
                 for (int i = inputParamCount; i < outputCount; ++i)
                 {
-                    sprintf(buf, "Key %d", i);
+                    snprintf(buf, sizeof(buf), "Key %d", i);
                     beh->CreateInputParameter(buf, CKPGUID_KEY);
                 }
             }

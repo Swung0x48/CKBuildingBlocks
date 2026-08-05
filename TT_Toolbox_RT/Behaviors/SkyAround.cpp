@@ -422,7 +422,7 @@ CKERROR SkyAroundCallBack(const CKBehaviorContext &behcontext)
         char name[64];
         for (int i = 1; i <= sideCount; ++i)
         {
-            sprintf(name, "%d.Side-Mat", i);
+            snprintf(name, sizeof(name), "%d.Side-Mat", i);
             beh->CreateInputParameter(name, CKPGUID_MATERIAL);
         }
 

@@ -232,7 +232,7 @@ int BitmapTextDisplay(const CKBehaviorContext &behcontext)
         if (oldString)
         {
             finalString = new char[buffer.Length() + (int)strlen(oldString) + 2];
-            sprintf(finalString, "%s\n%s", oldString, buffer.Str());
+            snprintf(finalString, buffer.Length() + strlen(oldString) + 2, "%s\n%s", oldString, buffer.Str());
         }
         update = TRUE;
     }

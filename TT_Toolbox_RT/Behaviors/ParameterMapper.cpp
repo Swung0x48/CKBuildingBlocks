@@ -97,7 +97,7 @@ CKERROR ParameterMapperCallBack(const CKBehaviorContext &behcontext)
         while (inputCount > paramCount)
         {
             char buffer[32];
-            sprintf(buffer, "pIn %d", paramCount);
+            snprintf(buffer, sizeof(buffer), "pIn %d", paramCount);
             beh->CreateInputParameter(buffer, CKPGUID_INT);
             paramCount++;
         }

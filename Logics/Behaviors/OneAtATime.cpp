@@ -128,7 +128,7 @@ CKERROR OneAtATimeCallBack(const CKBehaviorContext &behcontext)
 
         while (c > c_out) // we must add 'Outputs'
         {
-            sprintf(out_str, "Out %d", c_out);
+            snprintf(out_str, sizeof(out_str), "Out %d", c_out);
             beh->AddOutput(out_str);
             c_out++;
         }

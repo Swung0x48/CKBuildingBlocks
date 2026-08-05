@@ -86,7 +86,7 @@ static CKParameter *FindOrLinkParameter(CKContext *ctx, CKBehavior *script, cons
                         {
                             // Mark old source as replaced
                             char newName[256];
-                            sprintf(newName, "~* Replaced by: %s *~", sourceParam->GetName());
+                            snprintf(newName, sizeof(newName), "~* Replaced by: %s *~", sourceParam->GetName());
                             outSource->SetName(newName);
 
                             // Link to new source
@@ -98,7 +98,7 @@ static CKParameter *FindOrLinkParameter(CKContext *ctx, CKBehavior *script, cons
                             char buffer[512];
                             if (sourceParam->GetName() && script->GetName())
                             {
-                                sprintf(buffer,
+                                snprintf(buffer, sizeof(buffer),
                                     "TT ReplaceInputparameter: %s (%s) have got an other parametertype then %s!\n"
                                     "Couldn't create link!",
                                     outSource->GetName(), script->GetName(), sourceParam->GetName());

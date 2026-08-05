@@ -299,7 +299,7 @@ CKERROR SkyAroundCallBackObject(const CKBehaviorContext &behcontext)
         char str[128];
         for (a = 0; a < 6; a++)
         {
-            sprintf(str, "Sky-Cube Material %d", a);
+            snprintf(str, sizeof(str), "Sky-Cube Material %d", a);
 
             CKMaterial *mat = (CKMaterial *)ctx->CreateObject(CKCID_MATERIAL, str, beh->IsDynamic() ? CK_OBJECTCREATION_DYNAMIC : CK_OBJECTCREATION_NONAMECHECK);
             if (!mat)

@@ -253,9 +253,9 @@ CKERROR MultiMeshMorpherCallBack(const CKBehaviorContext &behcontext)
 
         while ((c_pin >> 1) < wanted_c_pin)
         { // we must add 'Input Param'
-            sprintf(pin_str, "Mesh %d", (c_pin >> 1) + 1);
+            snprintf(pin_str, sizeof(pin_str), "Mesh %d", (c_pin >> 1) + 1);
             beh->CreateInputParameter(pin_str, CKPGUID_MESH);
-            sprintf(pin_str, "Coef %d", (c_pin >> 1) + 1);
+            snprintf(pin_str, sizeof(pin_str), "Coef %d", (c_pin >> 1) + 1);
             beh->CreateInputParameter(pin_str, CKPGUID_FLOAT);
             c_pin += 2;
         }

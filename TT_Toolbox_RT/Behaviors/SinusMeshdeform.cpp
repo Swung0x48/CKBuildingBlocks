@@ -313,13 +313,13 @@ CKERROR SinusMeshdeformCallBack(const CKBehaviorContext &behcontext)
             while (currentCount < sinusCount)
             {
                 int num = currentCount + 1;
-                sprintf(paramName, "%d. Timefactor", num);
+                snprintf(paramName, sizeof(paramName), "%d. Timefactor", num);
                 beh->CreateInputParameter(paramName, CKPGUID_FLOAT);
-                sprintf(paramName, "%d. Heigth", num);
+                snprintf(paramName, sizeof(paramName), "%d. Heigth", num);
                 beh->CreateInputParameter(paramName, CKPGUID_FLOAT);
-                sprintf(paramName, "%d. Wavelength", num);
+                snprintf(paramName, sizeof(paramName), "%d. Wavelength", num);
                 beh->CreateInputParameter(paramName, CKPGUID_FLOAT);
-                sprintf(paramName, "%d. SinPos", num);
+                snprintf(paramName, sizeof(paramName), "%d. SinPos", num);
                 beh->CreateInputParameter(paramName, CKPGUID_VECTOR);
                 currentCount++;
             }

@@ -359,11 +359,11 @@ CKERROR PMSMeshdeformCallBack(const CKBehaviorContext &behcontext)
             while (currentWaveCount < waveCount)
             {
                 ++currentWaveCount;
-                sprintf(name, "%d.Wavelength in Y", currentWaveCount);
+                snprintf(name, sizeof(name), "%d.Wavelength in Y", currentWaveCount);
                 beh->CreateInputParameter(name, CKPGUID_FLOAT);
-                sprintf(name, "%d.Wavelength in X", currentWaveCount);
+                snprintf(name, sizeof(name), "%d.Wavelength in X", currentWaveCount);
                 beh->CreateInputParameter(name, CKPGUID_FLOAT);
-                sprintf(name, "%d.Amplitude in X", currentWaveCount);
+                snprintf(name, sizeof(name), "%d.Amplitude in X", currentWaveCount);
                 beh->CreateInputParameter(name, CKPGUID_FLOAT);
             }
         }
