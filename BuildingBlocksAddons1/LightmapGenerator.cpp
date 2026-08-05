@@ -1777,7 +1777,11 @@ LightmapGenerator::ComputeTransparency(const CK3dEntity &ent, const VxIntersecti
                 v = 1.0f - v;
             break;
         }
-        default:
+        case VXTEXTURE_ADDRESSMIRRORONCE:
+            u = XMin(1.0f, fabsf(u));
+            v = XMin(1.0f, fabsf(v));
+            break;
+        case VXTEXTURE_ADDRESSMASK: // Bit mask, not a valid addressing mode.
             break;
         };
 
@@ -1987,7 +1991,7 @@ void LightmapGenerator::ComputePointColor(VxColor &lumcolor, const VxVector &wor
             }
         }
         break;
-        default:
+        case VX_LIGHTPARA: // Obsolete light type; it has no supported lightmap contribution.
             break;
         }
     } // Lights for
