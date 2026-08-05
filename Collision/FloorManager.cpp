@@ -1299,6 +1299,8 @@ CKBOOL FloorManager::ConstrainToFloor(const VxVector &iPosition, float iRadius, 
         case CKFLOOR_UP:
             floorID = fp.m_UpFloor;
             break;
+        case CKFLOOR_NOFLOOR:
+            break;
         }
 
         CK3dEntity *floor = CK3dEntity::Cast(CKGetObject(floorID));
@@ -1322,6 +1324,8 @@ CKBOOL FloorManager::ConstrainToFloor(const VxVector &iPosition, float iRadius, 
                     break;
                 case CKFLOOR_UP:
                     floorID = fp.m_UpFloor;
+                    break;
+                case CKFLOOR_NOFLOOR:
                     break;
                 }
 

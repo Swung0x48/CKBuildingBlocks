@@ -470,6 +470,8 @@ int DoCharacterKeepOnFloorV2(const CKBehaviorContext &behcontext)
             pts[i].y += fps[i].m_UpDistance;
             up = TRUE;
             break;
+        case CKFLOOR_NOFLOOR:
+            break;
         }
     }
 
@@ -515,6 +517,8 @@ int DoCharacterKeepOnFloorV2(const CKBehaviorContext &behcontext)
         case CKFLOOR_UP:
             outFloor = (CK3dEntity *)ctx->GetObject(fps[0].m_UpFloor);
             break;
+        case CKFLOOR_NOFLOOR:
+            break;
         }
         outFloorOldDistance = higherYReplacement + offset;
         beh->ActivateOutput(0);
@@ -524,7 +528,7 @@ int DoCharacterKeepOnFloorV2(const CKBehaviorContext &behcontext)
         // some or all points are off the floor
 
         // we check if the user wants limit constraint and if it saved its last matrix
-        if (keepinfloor && character->GetFlags() | CK_3DENTITY_UPDATELASTFRAME)
+        if (keepinfloor && (character->GetFlags() & CK_3DENTITY_UPDATELASTFRAME))
         {
             // only activated when the user wants to be kept in floors
             beh->ActivateOutput(2);

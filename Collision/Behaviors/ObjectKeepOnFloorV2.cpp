@@ -389,6 +389,8 @@ int Test4Points(CKFloorManager *floorman, VxVector *pts, CKFloorPoint *fps, CK_F
         case CKFLOOR_DOWN:
             fps[i].m_DownDistance -= detoffset;
             break;
+        case CKFLOOR_NOFLOOR:
+            break;
         }
         if (!floors[i])
         {
@@ -550,7 +552,7 @@ int DoObjectKeepOnFloorV2Box(const CKBehaviorContext &behcontext)
 
         beh->ActivateOutput(2);
         // we check if the user wants limit constraint and if it saved its last matrix
-        if (keepinfloor && entity->GetFlags() | CK_3DENTITY_UPDATELASTFRAME)
+        if (keepinfloor && (entity->GetFlags() & CK_3DENTITY_UPDATELASTFRAME))
         {
             const VxMatrix &oldmat = entity->GetLastFrameMatrix();
 
