@@ -100,7 +100,7 @@ CKObjectDeclaration *FillBehaviorStatsDecl()
     <SPAN CLASS=setting>Behavioral: </SPAN>which behavioral statistics should the behavior compute ?<BR>
     <SPAN CLASS=setting>Rendering: </SPAN>which renderal statistics should the behavior compute ?<BR>
     <BR>
-    /* warning:
+    Warning:
     - When the "Statistics" building block stops, the profiler window will stop displaying informations. You'll need
     to close and open again to profiler to have it working.<BR>
     */

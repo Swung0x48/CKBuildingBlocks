@@ -56,7 +56,7 @@ CKERROR CreateSetPortalProto(CKBehaviorPrototype **pproto)
 
 /**********************************************/
 /*				FUNCTION
-/**********************************************/
+ **********************************************/
 int SetPortal(const CKBehaviorContext &behcontext)
 {
     CKBehavior *beh = behcontext.Behavior;

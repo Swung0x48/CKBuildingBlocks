@@ -1,17 +1,17 @@
 /**************************************************/
 /* Nearest Point Grid Class
-/*
-/*
-/* Step 0: Set the grid dimensions
-/*
-/* Step 1: Store 3d points in the grid
-/*
-/* Step 2: Set the Threshold value
-/*
-/* Step 3: Give a 3d point to test if it's near (dist<Threshold)
-/* some stored 3d points.
-/*
-/**************************************************/
+ *
+ *
+ * Step 0: Set the grid dimensions
+ *
+ * Step 1: Store 3d points in the grid
+ *
+ * Step 2: Set the Threshold value
+ *
+ * Step 3: Give a 3d point to test if it's near (dist<Threshold)
+ * some stored 3d points.
+ *
+ **************************************************/
 namespace BBAddons1
 {
     class NearestPointGrid

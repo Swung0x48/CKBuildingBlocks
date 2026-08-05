@@ -30,7 +30,7 @@ PLUGIN_EXPORT void RegisterBehaviorDeclarations(XObjectDeclarationArray *reg);
 
 /***********************************************/
 /*       PLUGINS INFO
-/***********************************************/
+ ***********************************************/
 
 CKPluginInfo g_PluginInfo;
 

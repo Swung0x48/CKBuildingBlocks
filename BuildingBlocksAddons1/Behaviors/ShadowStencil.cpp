@@ -16,7 +16,7 @@ extern const char *shadowStencilCasterMeshAttributeName;
 
 /**********************************************/
 /*				DECLARATION
-/**********************************************/
+ **********************************************/
 CKObjectDeclaration *FillBehaviorShadowStencilDecl()
 {
     CKObjectDeclaration *od = CreateCKObjectDeclaration("ShadowStencil");
@@ -34,7 +34,7 @@ CKObjectDeclaration *FillBehaviorShadowStencilDecl()
 
 /**********************************************/
 /*				PROTO
-/**********************************************/
+ **********************************************/
 CKERROR CreateShadowStencilProto(CKBehaviorPrototype **pproto)
 {
     CKBehaviorPrototype *proto = CreateCKBehaviorPrototype("ShadowStencil");
@@ -949,7 +949,7 @@ void ShadowStencilPostRender(CKRenderContext *renderContext, void *arg)
 
 /**********************************************/
 /*				FUNCTION
-/**********************************************/
+ **********************************************/
 int ShadowStencil(const CKBehaviorContext &behcontext)
 {
     CKBehavior *beh = behcontext.Behavior;
@@ -992,4 +992,4 @@ int ShadowStencil(const CKBehaviorContext &behcontext)
 
 /**********************************************/
 /*				CALLBACK
-/**********************************************/
+ **********************************************/

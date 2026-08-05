@@ -14,7 +14,7 @@ CKERROR PixelValueCallback(const CKBehaviorContext &context);
 
 /*****************************************/
 /*             Declaration
-/*****************************************/
+ *****************************************/
 CKObjectDeclaration *FillBehaviorPixelValueDecl()
 {
     CKObjectDeclaration *od = CreateCKObjectDeclaration("Pixel Value");
@@ -32,7 +32,7 @@ CKObjectDeclaration *FillBehaviorPixelValueDecl()
 
 /*****************************************/
 /*             Prototype
-/*****************************************/
+ *****************************************/
 CKERROR CreatePixelValueProto(CKBehaviorPrototype **pproto)
 {
     CKBehaviorPrototype *proto = CreateCKBehaviorPrototype("Pixel Value");
@@ -63,7 +63,7 @@ CKERROR CreatePixelValueProto(CKBehaviorPrototype **pproto)
 
 /*****************************************/
 /*             Function
-/*****************************************/
+ *****************************************/
 int PixelValue(const CKBehaviorContext &behcontext)
 {
     CKBehavior *beh = behcontext.Behavior;
@@ -171,7 +171,7 @@ int PixelValue(const CKBehaviorContext &behcontext)
 
 /*****************************************/
 /*             Callback
-/*****************************************/
+ *****************************************/
 CKERROR PixelValueCallback(const CKBehaviorContext &context)
 {
     CKBehavior *beh = context.Behavior;

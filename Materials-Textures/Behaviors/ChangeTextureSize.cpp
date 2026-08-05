@@ -49,7 +49,7 @@ CKERROR CreateChangeTextureSizeProto(CKBehaviorPrototype **pproto)
 
 /******************************************************/
 /*   Bbehavior Function
-/******************************************************/
+ ******************************************************/
 int ChangeTextureSize(const CKBehaviorContext &behcontext)
 {
     CKBehavior *beh = behcontext.Behavior;

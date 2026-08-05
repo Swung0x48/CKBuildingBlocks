@@ -155,13 +155,13 @@ void RegisterBehaviorDeclarations(XObjectDeclarationArray *reg)
 /**********************************************************************************/
 /**********************************************************************************/
 /*
-/* GetMultiPassMaxTextureNumber
-/*
-/* Used to switch methods of mapping
-/* If single pass support we shouldn't clip out range faces
-/*
-/* return: number of supported single pass textures, or -1 if problem
-/**********************************************************************************/
+ * GetMultiPassMaxTextureNumber
+ *
+ * Used to switch methods of mapping
+ * If single pass support we shouldn't clip out range faces
+ *
+ * return: number of supported single pass textures, or -1 if problem
+ **********************************************************************************/
 /**********************************************************************************/
 int GetSinglePassMaxTextureNumber(CKContext *ctx)
 {

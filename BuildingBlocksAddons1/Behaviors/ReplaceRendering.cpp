@@ -13,7 +13,7 @@ int ReplaceRendering(const CKBehaviorContext &behcontext);
 
 /**********************************************/
 /*				DECLARATION
-/**********************************************/
+ **********************************************/
 CKObjectDeclaration *FillBehaviorReplaceRenderingDecl()
 {
     CKObjectDeclaration *od = CreateCKObjectDeclaration("Replace Rendering");
@@ -31,7 +31,7 @@ CKObjectDeclaration *FillBehaviorReplaceRenderingDecl()
 
 /**********************************************/
 /*				PROTO
-/**********************************************/
+ **********************************************/
 CKERROR CreateReplaceRenderingProto(CKBehaviorPrototype **pproto)
 {
     CKBehaviorPrototype *proto = CreateCKBehaviorPrototype("Replace Rendering");
@@ -59,7 +59,7 @@ CKERROR CreateReplaceRenderingProto(CKBehaviorPrototype **pproto)
 
 /**********************************************/
 /*				SUB-MESH RENDER CALLBACK
-/**********************************************/
+ **********************************************/
 void ReplaceMaterialPreRender(CKRenderContext *rc, CK3dEntity *Mov, CKMesh *Object, CKMaterial *mat, void *arg)
 {
     CKBehavior *beh = (CKBehavior *)CKGetObject(rc->GetCKContext(), (CK_ID)(uintptr_t)arg);
@@ -143,7 +143,7 @@ void PostReplaceMaterialRCMesh(CKRenderContext *Dev, CK3dEntity *Mov, CKMesh *Ob
 
 /**********************************************/
 /*				FUNCTION
-/**********************************************/
+ **********************************************/
 int ReplaceRendering(const CKBehaviorContext &behcontext)
 {
     CKBehavior *beh = behcontext.Behavior;

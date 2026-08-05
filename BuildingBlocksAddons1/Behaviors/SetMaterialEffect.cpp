@@ -99,7 +99,7 @@ int SetMaterialEffect(const CKBehaviorContext &behcontext)
 
 /*****************************************/
 /*             Callback
-/*****************************************/
+ *****************************************/
 CKERROR SetMaterialEffectCallback(const CKBehaviorContext &context)
 {
     CKBehavior *beh = context.Behavior;
