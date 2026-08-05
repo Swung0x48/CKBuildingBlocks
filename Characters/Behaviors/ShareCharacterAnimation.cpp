@@ -83,7 +83,7 @@ CKERROR ShareCharacterAnimationsCB(const CKBehaviorContext &behcontext)
         int CharacterCount = group->GetObjectCount();
         CKCharacter *Carac;
         for (int i = 0; i < CharacterCount; ++i)
-            if (Carac = (CKCharacter *)group->GetObject(i))
+            if ((Carac = (CKCharacter *)group->GetObject(i)))
                 if (CKIsChildClassOf(Carac, CKCID_CHARACTER))
                     if (Carac != SourceCharacter)
                         if (Carac->CheckIfSameKindOfHierarchy(SourceCharacter))
@@ -91,20 +91,20 @@ CKERROR ShareCharacterAnimationsCB(const CKBehaviorContext &behcontext)
                             int AnimCount = SourceCharacter->GetAnimationCount();
                             CKKeyedAnimation *src_anim;
                             for (int j = 0; j < AnimCount; ++j)
-                                if (src_anim = (CKKeyedAnimation *)SourceCharacter->GetAnimation(j))
+                                if ((src_anim = (CKKeyedAnimation *)SourceCharacter->GetAnimation(j)))
                                     if (CKIsChildClassOf(src_anim, CKCID_KEYEDANIMATION))
                                     {
                                         int SubanimCount = src_anim->GetAnimationCount();
                                         CKObjectAnimation *Oanim;
                                         for (int k = 0; k < SubanimCount; ++k)
-                                            if (Oanim = src_anim->GetAnimation(k))
+                                            if ((Oanim = src_anim->GetAnimation(k)))
                                             {
                                                 for (int l = 0; l < ObjectAnimationsCount; l++)
                                                 {
                                                     CKObjectAnimation *ani = (CKObjectAnimation *)ctx->GetObject(ObjectAnimations[l]);
                                                     CKBodyPart *bd;
                                                     if (ani != Oanim)
-                                                        if (bd = (CKBodyPart *)ani->Get3dEntity())
+                                                        if ((bd = (CKBodyPart *)ani->Get3dEntity()))
                                                             if (CKIsChildClassOf(bd, CKCID_BODYPART))
                                                                 if (bd->GetCharacter() == Carac)
                                                                     if (ani->Compare(Oanim))

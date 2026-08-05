@@ -83,7 +83,7 @@ void WriteOutputParameters(CKDataArray *array, CKDataRow *dr, CKBehavior *beh, i
         {
 
             CK_CLASSID cid;
-            if (cid = pout->GetParameterClassID())
+            if ((cid = pout->GetParameterClassID()))
             {
                 CKObject *obj = beh->GetCKObject((CK_ID)*it);
                 if (CKIsChildClassOf(obj, cid))

@@ -119,7 +119,7 @@ int HierarchyParser(const CKBehaviorContext &behcontext)
         if (current != target) // we do not go upper the target where we begin
         {
             CK3dEntity *father;
-            while (father = current->GetParent())
+            while ((father = current->GetParent()))
             {
                 int fccount = father->GetChildrenCount();
                 int i = 0;

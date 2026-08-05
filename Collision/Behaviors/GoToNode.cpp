@@ -265,7 +265,7 @@ int DoCharacterGoToNode(const CKBehaviorContext &behcontext)
     if (oldnode && occupation)
     {
         CK3dEntity *occ;
-        if (occ = graph->GetOccupier(nodetogo))
+        if ((occ = graph->GetOccupier(nodetogo)))
         {
             if (occ != caracter)
             { // it's not the character itself...
@@ -333,7 +333,7 @@ int DoCharacterGoToNode(const CKBehaviorContext &behcontext)
         if (occupation)
         {
             CK3dEntity *occ;
-            if (occ = graph->GetOccupier(nodetogo))
+            if ((occ = graph->GetOccupier(nodetogo)))
             {
                 if (occ != caracter)
                 { // it's not the character itself...

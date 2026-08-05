@@ -323,7 +323,7 @@ CKERROR SimpleShadowCallBackObject(const CKBehaviorContext &behcontext)
         SimpleShadowStruct *tss = (SimpleShadowStruct *)beh->GetLocalParameterWriteDataPtr(0);
 
         CKMaterial *mat;
-        if (mat = (CKMaterial *)ctx->GetObject(tss->matID))
+        if ((mat = (CKMaterial *)ctx->GetObject(tss->matID)))
             ;
         else
             return 0;
@@ -342,7 +342,7 @@ CKERROR SimpleShadowCallBackObject(const CKBehaviorContext &behcontext)
         SimpleShadowStruct *tss = (SimpleShadowStruct *)beh->GetLocalParameterWriteDataPtr(0);
 
         CKMaterial *mat;
-        if (mat = (CKMaterial *)ctx->GetObject(tss->matID))
+        if ((mat = (CKMaterial *)ctx->GetObject(tss->matID)))
             ;
         else
             return 0;

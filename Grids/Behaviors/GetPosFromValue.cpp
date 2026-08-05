@@ -262,7 +262,7 @@ int GetPosFromValue(const CKBehaviorContext &behcontext)
     CKGrid *grid;
     for (int c = localposfromval.grid; c < count; c++)
     {
-        if (grid = gm->GetGridObject(c))
+        if ((grid = gm->GetGridObject(c)))
         {
             if (grid->IsActive())
             {

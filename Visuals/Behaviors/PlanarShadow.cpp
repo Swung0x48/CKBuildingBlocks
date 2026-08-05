@@ -550,7 +550,7 @@ int PlanarShadowPostRenderCallBack(CKRenderContext *rc, CKRenderObject *obj, voi
             }
 
             CK3dEntity *child = NULL;
-            while (child = ent->HierarchyParser(child))
+            while ((child = ent->HierarchyParser(child)))
             {
                 if (child->IsVisible() && !child->IsHiddenByParent())
                 {

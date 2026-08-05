@@ -108,7 +108,7 @@ int Variation(const CKBehaviorContext &behcontext)
     CKGUID type;
     CKParameterOut *pout;
 
-    if (pout = beh->GetOutputParameter(0))
+    if ((pout = beh->GetOutputParameter(0)))
     {
         type = pout->GetGUID();
 
@@ -245,28 +245,28 @@ CKERROR VariationCallBack(const CKBehaviorContext &behcontext)
     {
         CKParameterIn *pin;
         int type_in;
-        if (pin = beh->GetInputParameter(0))
+        if ((pin = beh->GetInputParameter(0)))
             type_in = pin->GetType();
 
         // we check the type of the 'Output Parameter'
         CKParameterOut *pout;
-        if (pout = beh->GetOutputParameter(0)) // output param
+        if ((pout = beh->GetOutputParameter(0))) // output param
             if (pout->GetType() != type_in)
             {
                 pout->SetType(type_in);
 
                 CKParameterLocal *p;
-                if (p = beh->GetLocalParameter(0)) // local param
+                if ((p = beh->GetLocalParameter(0))) // local param
                 {
                     p->SetType(type_in);
                 }
 
-                if (pin = beh->GetInputParameter(1)) // second input param
+                if ((pin = beh->GetInputParameter(1))) // second input param
                 {
                     pin->SetType(type_in);
                 }
 
-                if (pout = beh->GetOutputParameter(1)) // second output param
+                if ((pout = beh->GetOutputParameter(1))) // second output param
                 {
                     pout->SetType(type_in);
                 }

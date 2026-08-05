@@ -132,7 +132,7 @@ int ArrayGetElement(const CKBehaviorContext &behcontext)
     case CKARRAYTYPE_OBJECT:
     {
         CK_CLASSID cid;
-        if (cid = pout->GetParameterClassID())
+        if ((cid = pout->GetParameterClassID()))
         {
             CKObject *obj = behcontext.Context->GetObject((CK_ID)*e);
             if (CKIsChildClassOf(obj, cid))

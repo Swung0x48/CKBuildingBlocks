@@ -267,7 +267,7 @@ int rendercallback(CKRenderContext *rc, CKRenderObject *obj, void *arg)
         for (a = 0; a < matCount; ++a)
         {
             smi[a].mat = mesh->GetMaterial(a);
-            if (currentMaterial = smi[a].mat)
+            if ((currentMaterial = smi[a].mat))
             {
                 smi[a].srcmode = currentMaterial->GetSourceBlend();
                 smi[a].destmode = currentMaterial->GetDestBlend();
@@ -296,7 +296,7 @@ int rendercallback(CKRenderContext *rc, CKRenderObject *obj, void *arg)
             // put transparence to all materials of the mesh
             for (b = 0; b < matCount; ++b)
             {
-                if (currentMaterial = smi[b].mat)
+                if ((currentMaterial = smi[b].mat))
                 {
 
                     col = currentMaterial->GetDiffuse();
@@ -316,7 +316,7 @@ int rendercallback(CKRenderContext *rc, CKRenderObject *obj, void *arg)
             // put transparence to all materials of the mesh
             for (b = 0; b < matCount; ++b)
             {
-                if (currentMaterial = smi[b].mat)
+                if ((currentMaterial = smi[b].mat))
                 {
 
                     col = currentMaterial->GetDiffuse();
@@ -336,7 +336,7 @@ int rendercallback(CKRenderContext *rc, CKRenderObject *obj, void *arg)
         // we restore the material as they were before bluring
         for (a = 0; a < matCount; ++a)
         {
-            if (currentMaterial = smi[a].mat)
+            if ((currentMaterial = smi[a].mat))
             {
                 currentMaterial->SetSourceBlend(smi[a].srcmode);
                 currentMaterial->SetDestBlend(smi[a].destmode);

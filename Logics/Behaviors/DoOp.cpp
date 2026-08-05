@@ -132,11 +132,11 @@ CKERROR DoOperaCallBack(const CKBehaviorContext &behcontext)
         CKGUID i1g, i2g, og, opg;
         CKParameterIn *pin;
         CKParameterOut *pout;
-        if (pin = beh->GetInputParameter(0))
+        if ((pin = beh->GetInputParameter(0)))
             i1g = pin->GetGUID();
-        if (pin = beh->GetInputParameter(1))
+        if ((pin = beh->GetInputParameter(1)))
             i2g = pin->GetGUID();
-        if (pout = beh->GetOutputParameter(0))
+        if ((pout = beh->GetOutputParameter(0)))
             og = pout->GetGUID();
 
         CKParameterManager *pm = behcontext.ParameterManager;
@@ -221,7 +221,6 @@ CKERROR DoOperaCallBack(const CKBehaviorContext &behcontext)
             else
                 resg = CKPGUID_NONE;
 
-            i1g, i2g, resg, opg;
             A_LocalOpStruct *opstructtmp = (A_LocalOpStruct *)beh->GetLocalParameterReadDataPtr(0);
             opstructtmp->opfct = pMgr->GetOperationFunction(opg, resg, i1g, i2g);
             if (!opstructtmp->opfct)
@@ -240,18 +239,18 @@ CKERROR DoOperaCallBack(const CKBehaviorContext &behcontext)
 
             //___________________ Set Inputs Type
             CKParameterIn *pin;
-            if (pin = beh->GetInputParameter(0))
+            if ((pin = beh->GetInputParameter(0)))
             {
                 pin->SetGUID(i1g, TRUE);
             }
-            if (pin = beh->GetInputParameter(1))
+            if ((pin = beh->GetInputParameter(1)))
             {
                 pin->SetGUID(i2g, TRUE);
             }
 
             //___________________ Set Outputs Type
             CKParameterOut *pout;
-            if (pout = beh->GetOutputParameter(0))
+            if ((pout = beh->GetOutputParameter(0)))
             {
                 pout->SetGUID(resg);
             }

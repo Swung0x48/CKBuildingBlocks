@@ -261,7 +261,7 @@ CKERROR DaUCharacterCB(const CKBehaviorContext &behcontext)
                         params[i].ParameterIndexes[j] = -1;
                     params[i].ParameterMask = 0;
                 }
-                if (!(params[i].ParameterMask & PARAM_ANIMATION_MASK))
+                if (!(params[i].ParameterMask & PARAM_ANIMATION_MASK)) {
                     if (params[i].IndexAnimation >= 0)
                     {
                         params[i].AnimationPtr = (CKAnimation *)array->GetObject(ctx, params[i].IndexAnimation);
@@ -270,6 +270,7 @@ CKERROR DaUCharacterCB(const CKBehaviorContext &behcontext)
                     {
                         params[i].AnimationPtr = NULL;
                     }
+                }
             }
         }
 
@@ -310,7 +311,7 @@ CKERROR DaUCharacterCB(const CKBehaviorContext &behcontext)
                         params[i].ParameterIndexes[j] = -1;
                     params[i].ParameterMask = 0;
                 }
-                if (!(params[i].ParameterMask & PARAM_ANIMATION_MASK))
+                if (!(params[i].ParameterMask & PARAM_ANIMATION_MASK)) {
                     if (params[i].IndexAnimation >= 0)
                     {
                         params[i].AnimationPtr = (CKAnimation *)array->GetObject(ctx, params[i].IndexAnimation);
@@ -319,6 +320,7 @@ CKERROR DaUCharacterCB(const CKBehaviorContext &behcontext)
                     {
                         params[i].AnimationPtr = NULL;
                     }
+                }
             }
         }
         if (beh->GetVersion() <= NOPARAM_VERSION) // Old version invalidate parameter indexes
@@ -420,7 +422,7 @@ int DoUnlimitedController(const CKBehaviorContext &behcontext)
     XBitArray Messages;
     CKMessage *msg = NULL;
     for (i = 0; i < carac->GetLastFrameMessageCount(); i++)
-        if (msg = carac->GetLastFrameMessage(i))
+        if ((msg = carac->GetLastFrameMessage(i)))
             Messages.Set(msg->GetMsgType());
 
     //---------------------------------------------------------------------------------
@@ -602,7 +604,7 @@ int DoUnlimitedController(const CKBehaviorContext &behcontext)
             }
 
     //------------- Rotate Management
-    if (anim = carac->GetActiveAnimation())
+    if ((anim = carac->GetActiveAnimation()))
         Rotates = (anim->GetFlags() & CKANIMATION_ALLOWTURN);
     if (Rotates)
     {

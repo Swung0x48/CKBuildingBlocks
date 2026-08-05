@@ -94,7 +94,7 @@ int SplitString(const CKBehaviorContext &behcontext)
     CKSTRING str = string;
     CKSTRING del = NULL;
 
-    while (del = strstr(str, delim))
+    while ((del = strstr(str, delim)))
     {
         if (del != str) // delimiter at the start of the string, we skip it
         {

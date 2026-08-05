@@ -768,7 +768,7 @@ CK3dEntity *CollisionManager::IsInCollisionWithHierarchy(CK3dEntity *ent1, CK_GE
     for (int i = 0; i < ent2->GetChildrenCount(); i++)
     {
         CK3dEntity *child = ent2->GetChild(i);
-        if (touched = IsInCollisionWithHierarchy(ent1, precis_level1, child, precis_level2))
+        if ((touched = IsInCollisionWithHierarchy(ent1, precis_level1, child, precis_level2)))
             return touched;
     }
     return NULL;
@@ -827,7 +827,7 @@ CKBOOL CollisionManager::IsHierarchyInCollisionWithHierarchy(CK3dEntity *ent1, C
 
     // if we arrived here, we know there could be a collision with the root and the other hierarchy
     // so we test it right now
-    if (touched = IsInCollisionWithHierarchy(ent1, precis_level1, ent2, precis_level2))
+    if ((touched = IsInCollisionWithHierarchy(ent1, precis_level1, ent2, precis_level2)))
     {
         *sub = ent1;
         *subob = touched;

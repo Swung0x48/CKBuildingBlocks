@@ -360,7 +360,7 @@ CKERROR PushButtonCallBack(const CKBehaviorContext &behcontext)
         // Outputs Creation/Deletion
         if (eventMask & BOM_PRESSED)
         {
-            if (out = beh->GetOutput(pos))
+            if ((out = beh->GetOutput(pos)))
             {
                 out->SetName("Pressed");
             }
@@ -370,7 +370,7 @@ CKERROR PushButtonCallBack(const CKBehaviorContext &behcontext)
         }
         if (eventMask & BOM_RELEASED)
         {
-            if (out = beh->GetOutput(pos))
+            if ((out = beh->GetOutput(pos)))
             {
                 out->SetName("Released");
             }
@@ -380,7 +380,7 @@ CKERROR PushButtonCallBack(const CKBehaviorContext &behcontext)
         }
         if (eventMask & BOM_ACTIVE)
         {
-            if (out = beh->GetOutput(pos))
+            if ((out = beh->GetOutput(pos)))
             {
                 out->SetName("Active");
             }
@@ -390,7 +390,7 @@ CKERROR PushButtonCallBack(const CKBehaviorContext &behcontext)
         }
         if (eventMask & BOM_ENTERREGION)
         {
-            if (out = beh->GetOutput(pos))
+            if ((out = beh->GetOutput(pos)))
             {
                 out->SetName("Enter Button");
             }
@@ -400,7 +400,7 @@ CKERROR PushButtonCallBack(const CKBehaviorContext &behcontext)
         }
         if (eventMask & BOM_EXITREGION)
         {
-            if (out = beh->GetOutput(pos))
+            if ((out = beh->GetOutput(pos)))
             {
                 out->SetName("Exit Button");
             }
@@ -410,7 +410,7 @@ CKERROR PushButtonCallBack(const CKBehaviorContext &behcontext)
         }
         if (eventMask & BOM_INREGION)
         {
-            if (out = beh->GetOutput(pos))
+            if ((out = beh->GetOutput(pos)))
             {
                 out->SetName("In Button");
             }

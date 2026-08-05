@@ -311,7 +311,7 @@ CKERROR TestCallBack(const CKBehaviorContext &behcontext)
         CKGUID guid;
         for (int a = 1; a < 3; ++a)
         {
-            if (pin = beh->GetInputParameter(a))
+            if ((pin = beh->GetInputParameter(a)))
             {
                 guid = pin->GetGUID();
                 if (!pm->IsDerivedFrom(guid, CKPGUID_FLOAT) && !pm->IsDerivedFrom(guid, CKPGUID_STRING) && !pm->IsDerivedFrom(guid, CKPGUID_INT) && !pm->IsDerivedFrom(guid, CKPGUID_OBJECT))

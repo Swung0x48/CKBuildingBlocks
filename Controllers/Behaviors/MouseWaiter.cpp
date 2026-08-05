@@ -184,7 +184,7 @@ int MouseWaiter(const CKBehaviorContext &behcontext)
     // Mouse Move
     if (mef & MEMOVE)
     {
-        if (out = beh->GetOutput(pos))
+        if ((out = beh->GetOutput(pos)))
         {
             if (mousePos.x != oldMousePos.x || mousePos.y != oldMousePos.y)
             {
@@ -198,7 +198,7 @@ int MouseWaiter(const CKBehaviorContext &behcontext)
     // Left Button
     if (mef & MELDRECEIVED)
     {
-        if (out = beh->GetOutput(pos))
+        if ((out = beh->GetOutput(pos)))
         {
             if (!left_old && left_new)
             {
@@ -213,7 +213,7 @@ int MouseWaiter(const CKBehaviorContext &behcontext)
     }
     if (mef & MELURECEIVED)
     {
-        if (out = beh->GetOutput(pos))
+        if ((out = beh->GetOutput(pos)))
         {
             if (left_old && !left_new)
             {
@@ -230,7 +230,7 @@ int MouseWaiter(const CKBehaviorContext &behcontext)
     // Right Button
     if (mef & MERDRECEIVED)
     {
-        if (out = beh->GetOutput(pos))
+        if ((out = beh->GetOutput(pos)))
         {
             if (!right_old && right_new)
             {
@@ -245,7 +245,7 @@ int MouseWaiter(const CKBehaviorContext &behcontext)
     }
     if (mef & MERURECEIVED)
     {
-        if (out = beh->GetOutput(pos))
+        if ((out = beh->GetOutput(pos)))
         {
             if (right_old && !right_new)
             {
@@ -262,7 +262,7 @@ int MouseWaiter(const CKBehaviorContext &behcontext)
     // Middle Button
     if (mef & MEMDRECEIVED)
     {
-        if (out = beh->GetOutput(pos))
+        if ((out = beh->GetOutput(pos)))
         {
             if (!middle_old && middle_new)
             {
@@ -277,7 +277,7 @@ int MouseWaiter(const CKBehaviorContext &behcontext)
     }
     if (mef & MEMURECEIVED)
     {
-        if (out = beh->GetOutput(pos))
+        if ((out = beh->GetOutput(pos)))
         {
             if (middle_old && !middle_new)
             {
@@ -294,7 +294,7 @@ int MouseWaiter(const CKBehaviorContext &behcontext)
     // Roll
     if (mef & MEROLL)
     {
-        if (out = beh->GetOutput(pos))
+        if ((out = beh->GetOutput(pos)))
         {
             if (wheelDir)
             {
@@ -369,7 +369,7 @@ CKERROR MouseWaiterCallBack(const CKBehaviorContext &behcontext)
         // Outputs Creation/Deletion
         if (mef & MEMOVE)
         {
-            if (out = beh->GetOutput(pos))
+            if ((out = beh->GetOutput(pos)))
             {
                 out->SetName("Move Received");
             }
@@ -379,7 +379,7 @@ CKERROR MouseWaiterCallBack(const CKBehaviorContext &behcontext)
         }
         if (mef & MELDRECEIVED)
         {
-            if (out = beh->GetOutput(pos))
+            if ((out = beh->GetOutput(pos)))
             {
                 out->SetName("Left Button Down Received");
             }
@@ -389,7 +389,7 @@ CKERROR MouseWaiterCallBack(const CKBehaviorContext &behcontext)
         }
         if (mef & MELURECEIVED)
         {
-            if (out = beh->GetOutput(pos))
+            if ((out = beh->GetOutput(pos)))
             {
                 out->SetName("Left Button Up Received");
             }
@@ -399,7 +399,7 @@ CKERROR MouseWaiterCallBack(const CKBehaviorContext &behcontext)
         }
         if (mef & MERDRECEIVED)
         {
-            if (out = beh->GetOutput(pos))
+            if ((out = beh->GetOutput(pos)))
             {
                 out->SetName("Right Button Down Received");
             }
@@ -409,7 +409,7 @@ CKERROR MouseWaiterCallBack(const CKBehaviorContext &behcontext)
         }
         if (mef & MERURECEIVED)
         {
-            if (out = beh->GetOutput(pos))
+            if ((out = beh->GetOutput(pos)))
             {
                 out->SetName("Right Button Up Received");
             }
@@ -419,7 +419,7 @@ CKERROR MouseWaiterCallBack(const CKBehaviorContext &behcontext)
         }
         if (mef & MEMDRECEIVED)
         {
-            if (out = beh->GetOutput(pos))
+            if ((out = beh->GetOutput(pos)))
             {
                 out->SetName("Middle Button Down Received");
             }
@@ -429,7 +429,7 @@ CKERROR MouseWaiterCallBack(const CKBehaviorContext &behcontext)
         }
         if (mef & MEMURECEIVED)
         {
-            if (out = beh->GetOutput(pos))
+            if ((out = beh->GetOutput(pos)))
             {
                 out->SetName("Middle Button Up Received");
             }
@@ -439,7 +439,7 @@ CKERROR MouseWaiterCallBack(const CKBehaviorContext &behcontext)
         }
         if (mef & MEROLL)
         {
-            if (out = beh->GetOutput(pos))
+            if ((out = beh->GetOutput(pos)))
             {
                 out->SetName("Roll Received");
             }

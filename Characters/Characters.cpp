@@ -57,9 +57,9 @@ CKERROR InitInstance(CKContext *context)
 
     // We hide the parameters (structures and flags)
     CKParameterTypeDesc *param_type;
-    if (param_type = pm->GetParameterTypeDescription(CKPGUID_ANIMTRANSITION))
+    if ((param_type = pm->GetParameterTypeDescription(CKPGUID_ANIMTRANSITION)))
         param_type->dwFlags |= CKPARAMETERTYPE_HIDDEN;
-    if (param_type = pm->GetParameterTypeDescription(CKPGUID_SANIMPLAYMODE))
+    if ((param_type = pm->GetParameterTypeDescription(CKPGUID_SANIMPLAYMODE)))
         param_type->dwFlags |= CKPARAMETERTYPE_HIDDEN;
 
     return CK_OK;

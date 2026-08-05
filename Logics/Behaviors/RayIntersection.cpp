@@ -164,7 +164,7 @@ void Intersect(CK3dEntity *CurrentEntity, IntersectionDesc *idesc, CKScene *scen
                                 while (count)
                                 {
                                     CKBodyPart *bp;
-                                    if (bp = ((CKCharacter *)CurrentEntity)->GetBodyPart(--count))
+                                    if ((bp = ((CKCharacter *)CurrentEntity)->GetBodyPart(--count)))
                                     {
                                         //______________________________/ Reject BodyPart by Bounding Cube (in world)
                                         if (VxIntersect::RayBox(idesc->m_Ray, bp->GetBoundingBox()))

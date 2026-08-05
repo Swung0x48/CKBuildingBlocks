@@ -222,7 +222,7 @@ CKBOOL GridPathManager::ConstructListNodeLinker(XList<int> *listLayer)
 
             for (j = 0; j < m_GridManager->GetLayerTypeCount(); ++j)
                 if (m_GridManager->GetAssociatedParam(j) == CKPGUID_LINKERGRAPH_ENUM)
-                    if (layer = grid->GetLayer(j))
+                    if ((layer = grid->GetLayer(j)))
                     {
                         for (x = 0; x < w; ++x)
                             for (y = 0; y < l; ++y)
@@ -1105,7 +1105,7 @@ int GetGrid2GridPath(PathProblem &pathProblem, int context)
                     it3 = indoorLink->m_ListSameGridLayerCoast.Begin();
                     it4 = indoorLink->m_ListSameGridMaxLayerCoast.Begin();
                     float slowingDivTresh = pathProblem.m_SlowingDivTreshold;
-                    for (it; it != nodeLinker->m_ArrayIndoor[layerIndex].m_ListSameGrid.End(); it++, it2++, it3++, it4++)
+                    for (; it != nodeLinker->m_ArrayIndoor[layerIndex].m_ListSameGrid.End(); it++, it2++, it3++, it4++)
                         if (*it4 <= pathProblem.m_ObstacleThreshold)
                             ManageNodeLinkerSuccesor(pathProblem, context, nodeLinker, *it, *it2 + *it3 * slowingDivTresh);
                 }
@@ -1616,7 +1616,7 @@ void GridPathManager::GetPath(CK3dEntity *target, float &coast, CKCurve *curve)
             ++indexPoint;
         }
     }
-    while (cpoint = curve->GetControlPoint(indexPoint))
+    while ((cpoint = curve->GetControlPoint(indexPoint)))
     {
         curve->RemoveControlPoint(cpoint);
         target->GetCKContext()->DestroyObject(cpoint->GetID());

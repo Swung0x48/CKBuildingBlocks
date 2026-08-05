@@ -155,7 +155,7 @@ int GridManager::GetTypeFromName(CKSTRING TypeName)
     int type = m_LayerTypeCount;
     while (type)
     {
-        if (tmp = m_LayerTypeName[--type])
+        if ((tmp = m_LayerTypeName[--type]))
         {
             if (!strcmp(tmp, TypeName))
                 break;
@@ -623,7 +623,7 @@ CKGrid *GridManager::GetNearestGrid(VxVector *pos, CK3dEntity *ref)
     float mag_tmp, min_magnitude = 100000000.0f;
     for (CKObject **o = grids.Begin(); o != grids.End(); ++o)
     {
-        if (grid = (CKGrid *)*o)
+        if ((grid = (CKGrid *)*o))
         {
             if (grid->IsActive())
             {
@@ -666,7 +666,7 @@ CKGrid *GridManager::GetPreferredGrid(VxVector *pos, CK3dEntity *ref)
 
     for (CKObject **o = grids.Begin(); o != grids.End(); ++o)
     {
-        if (grid = (CKGrid *)*o)
+        if ((grid = (CKGrid *)*o))
         {
             if (grid->IsActive())
             {
@@ -777,7 +777,7 @@ CKERROR GridManager::LoadData(CKStateChunk *chunk, CKFile *LoadedFile)
             dataTmp = LoadedFile->m_FileObjects[a].Data;
             if (CKIsChildClassOf(LoadedFile->m_FileObjects[a].ObjectCid, CKCID_PARAMETER))
             {
-                if (param = (CKParameter *)LoadedFile->m_FileObjects[a].ObjPtr)
+                if ((param = (CKParameter *)LoadedFile->m_FileObjects[a].ObjPtr))
                 {
 
                     if (dataTmp->SeekIdentifier(CK_STATESAVE_PARAMETEROUT_VAL))
@@ -840,7 +840,7 @@ CKStateChunk *GridManager::SaveData(CKFile *SavedFile)
             // Remap every parameter value if needed
             if (CKIsChildClassOf(SavedFile->m_FileObjects[a].ObjectCid, CKCID_PARAMETER))
             {
-                if (param = (CKParameter *)SavedFile->m_FileObjects[a].ObjPtr)
+                if ((param = (CKParameter *)SavedFile->m_FileObjects[a].ObjPtr))
                 {
                     if (param->GetType() == paramtype)
                     {

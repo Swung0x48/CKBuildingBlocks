@@ -137,11 +137,12 @@ int SpriteLoader(const CKBehaviorContext &behcontext)
 
             // Loading
             CKERROR res = CKERR_INVALIDOBJECT;
-            if (tex)
+            if (tex) {
                 if (!tex->LoadImage(fname.Str(), slot))
                     res = CKERR_INVALIDFILE;
                 else
                     res = CK_OK;
+            }
 
             if (res != CK_OK)
                 beh->ActivateOutput(1);

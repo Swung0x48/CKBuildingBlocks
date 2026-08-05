@@ -78,7 +78,7 @@ int FillLayer(const CKBehaviorContext &behcontext)
 
     for (CKObject **o = array.Begin(); o != array.End(); ++o)
     {
-        if (grid = (CKGrid *)*o)
+        if ((grid = (CKGrid *)*o))
         {
             if (grid->IsActive())
             {

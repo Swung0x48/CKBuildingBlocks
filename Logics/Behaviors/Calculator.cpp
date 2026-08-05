@@ -646,7 +646,7 @@ CKERROR CalculatorCallBack(const CKBehaviorContext& behcontext)
       CKParameterIn* pin;
       CKParameter* pout;
       
-      if( pout = beh->GetOutputParameter(0) ){
+      if(( pout = beh->GetOutputParameter(0) )){
         CKGUID tmp_guid;
         
         tmp_guid = pout->GetGUID(); // we check the type of the 'Output Parameter'
@@ -662,7 +662,7 @@ CKERROR CalculatorCallBack(const CKBehaviorContext& behcontext)
           if( (tmp_guid!=CKPGUID_FLOAT) && (tmp_guid!=CKPGUID_VECTOR) ){
           
             pin->SetGUID( CKPGUID_FLOAT );
-            if( pout = pin->GetRealSource() ){
+            if(( pout = pin->GetRealSource() )){
               pout->SetGUID( CKPGUID_FLOAT );
             }
           }
@@ -748,7 +748,7 @@ int CreateNodeStack(char *line, Node_Total_Struct *nts, CKBehavior *beh){
           arg.ptr = beh->GetInputParameter( *str-'A'+1 );
 
           CKParameterIn *pin;
-          if( pin = (CKParameterIn*) arg.ptr ){
+          if(( pin = (CKParameterIn*) arg.ptr )){
             
             CKGUID type = pin->GetGUID();
             
@@ -991,7 +991,7 @@ int EvalNode( float *val, int *type ){
   case PARAM_FLOAT_PTR:
     {
       CKParameterIn *pin;
-      if( pin = (CKParameterIn*) cnode->ptr ){
+      if(( pin = (CKParameterIn*) cnode->ptr )){
         pin->GetValue( val );
         *type = FLOAT_VALUE;
       }
@@ -1000,7 +1000,7 @@ int EvalNode( float *val, int *type ){
   case PARAM_VECTOR_PTR:
     {
       CKParameterIn *pin;
-      if( pin = (CKParameterIn*) cnode->ptr ){
+      if(( pin = (CKParameterIn*) cnode->ptr )){
         pin->GetValue( val );
         *type = VECTOR_VALUE;
       }

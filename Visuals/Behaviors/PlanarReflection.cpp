@@ -335,7 +335,7 @@ int PlanarReflectionPreRenderCallBack(CKRenderContext *rc, CKRenderObject *obj, 
                 ent->Render(rc, CKRENDER_DONTSETMATRIX);
             ent->SetMoveableFlags(oldflags);
             CK3dEntity *child = NULL;
-            while (child = ent->HierarchyParser(child))
+            while ((child = ent->HierarchyParser(child)))
             {
 
                 // Set the reflected matrix

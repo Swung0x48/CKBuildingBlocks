@@ -151,7 +151,7 @@ int KeepAtConstantDistance(const CKBehaviorContext &behcontext)
     wanted_d = current_d - wanted_d;
 
     float tmp;
-    if (tmp = current_d * (attenuation + 1.0f))
+    if ((tmp = current_d * (attenuation + 1.0f)))
     {
         float f = wanted_d / tmp;
         v *= f;

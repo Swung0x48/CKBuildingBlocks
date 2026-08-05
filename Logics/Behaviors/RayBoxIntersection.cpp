@@ -149,7 +149,7 @@ int RayBoxIntersection(const CKBehaviorContext &behcontext)
                 ray.Transform(localray, ent->GetInverseWorldMatrix());
 
                 CKBOOL b;
-                if (b = VxIntersect::RayBox(localray, box, IntersectionPoint, NULL, &IntersectionNormal))
+                if ((b = VxIntersect::RayBox(localray, box, IntersectionPoint, NULL, &IntersectionNormal)))
                 {
                     // the origin is inside the box
                     if (b == -1)
