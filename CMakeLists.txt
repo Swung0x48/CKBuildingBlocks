@@ -53,6 +53,7 @@ option(CKBB_BUILD_ALL_MODULES "Build all available building block modules" ON)
 option(CKBB_BUILD_SHARED "Build building blocks as DLLs (SHARED)" ON)
 option(CKBB_BUILD_STATIC "Build building blocks as static libraries (STATIC)" OFF)
 option(CKBB_INSTALL "Generate install target" ${CKBB_IS_TOP_LEVEL})
+option(CKBB_BUILD_TESTS "Build the test suite" ${CKBB_IS_TOP_LEVEL})
 
 # =============================================================================
 # CMake modules
