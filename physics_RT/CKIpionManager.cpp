@@ -11,8 +11,6 @@
 #include "ivp_surbuild_pointsoup.hxx"
 #include "ivp_surman_polygon.hxx"
 
-#include <stdio.h>
-
 static bool IsPhysicsHandleBehavior(CKGUID guid)
 {
     return guid == CKGUID(0x5e624f0a, 0x35160450) || // Set Physics Ball Joint
@@ -27,48 +25,6 @@ static bool IsPhysicsHandleBehavior(CKGUID guid)
 static bool IsZeroVector(const VxVector &v)
 {
     return fabsf(v.x) <= 0.0001f && fabsf(v.y) <= 0.0001f && fabsf(v.z) <= 0.0001f;
-}
-
-static void BuildCollisionSurfaceKey(char *buffer, int bufferSize, CKSTRING name, VxVector *scale,
-                                     int convexCount, CKMesh **convexes, int concaveCount, CKMesh **concaves)
-{
-    if (!buffer || bufferSize <= 0)
-        return;
-
-    VxVector s = scale ? *scale : VxVector(1.0f, 1.0f, 1.0f);
-    int used = snprintf(buffer, bufferSize, "%s|scale=%.6g,%.6g,%.6g", name ? name : "",
-                        s.x, s.y, s.z);
-    if (used < 0)
-    {
-        buffer[0] = '\0';
-        return;
-    }
-    if (used >= bufferSize)
-        used = bufferSize - 1;
-
-    for (int i = 0; i < convexCount && used < bufferSize - 1; ++i)
-    {
-        CK_ID id = convexes && convexes[i] ? convexes[i]->GetID() : 0;
-        int written = snprintf(buffer + used, bufferSize - used, "|c%d=%u", i, (unsigned int)id);
-        if (written < 0)
-            break;
-        used += written;
-        if (used >= bufferSize)
-            used = bufferSize - 1;
-    }
-
-    for (int j = 0; j < concaveCount && used < bufferSize - 1; ++j)
-    {
-        CK_ID id = concaves && concaves[j] ? concaves[j]->GetID() : 0;
-        int written = snprintf(buffer + used, bufferSize - used, "|n%d=%u", j, (unsigned int)id);
-        if (written < 0)
-            break;
-        used += written;
-        if (used >= bufferSize)
-            used = bufferSize - 1;
-    }
-
-    buffer[bufferSize - 1] = '\0';
 }
 
 static void DeleteCollisionSurfaceOwner(PhysicsCollisionSurface *surface)
@@ -497,11 +453,7 @@ int CKIpionManager::CreatePhysicsObjectOnParameters(CK3dEntity *target, int conv
     }
     else
     {
-        char collisionSurfaceKey[512];
-        BuildCollisionSurfaceKey(collisionSurfaceKey, sizeof(collisionSurfaceKey), collisionSurface, &scale,
-                                 convexCount, convexes, concaveCount, concaves);
-
-        IVP_SurfaceManager *surman = GetCollisionSurface(collisionSurfaceKey);
+        IVP_SurfaceManager *surman = GetCollisionSurface(collisionSurface);
         if (!surman)
         {
             IVP_SurfaceBuilder_Ledge_Soup builder;
@@ -537,7 +489,7 @@ int CKIpionManager::CreatePhysicsObjectOnParameters(CK3dEntity *target, int conv
                 {
                     surman = new IVP_SurfaceManager_Polygon(compactSurface);
                     if (surman)
-                        AddCollisionSurface(collisionSurfaceKey, surman, compactSurface);
+                        AddCollisionSurface(collisionSurface, surman, compactSurface);
                     else
                         ivp_free_aligned(compactSurface);
                 }
