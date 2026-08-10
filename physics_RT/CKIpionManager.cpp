@@ -453,6 +453,8 @@ int CKIpionManager::CreatePhysicsObjectOnParameters(CK3dEntity *target, int conv
     }
     else
     {
+        // Collision Surface is the caller-provided stable identity. Geometry is
+        // only consumed to populate that named cache entry on the first miss.
         IVP_SurfaceManager *surman = GetCollisionSurface(collisionSurface);
         if (!surman)
         {

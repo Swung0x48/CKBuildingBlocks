@@ -155,21 +155,6 @@ int Physicalize(const CKBehaviorContext &behcontext)
         if (concaveCount < 0)
             concaveCount = 0;
 
-        // Reused collision surfaces may omit the shape inputs used to create them.
-        CKMesh *recoveredShapeMesh = NULL;
-        if (convexCount == 0 && ballCount == 0 && concaveCount == 0 &&
-            collisionSurface && collisionSurface[0] != '\0')
-        {
-            CK3dObject *object = CK3dObject::Cast(ent);
-            CKMesh *currentMesh = object ? object->GetCurrentMesh() : NULL;
-            CKSTRING currentMeshName = currentMesh ? currentMesh->GetName() : NULL;
-            if (currentMeshName && strcmp(currentMeshName, collisionSurface) == 0)
-            {
-                recoveredShapeMesh = currentMesh;
-                convexCount = 1;
-            }
-        }
-
         int pos = CONVEX;
         CKMesh **convexMeshes = (convexCount > 0) ? new CKMesh *[convexCount] : NULL;
         VxVector *ballPositions = (ballCount > 0) ? new VxVector[ballCount] : NULL;
@@ -177,15 +162,8 @@ int Physicalize(const CKBehaviorContext &behcontext)
         CKMesh **concaveMeshes = (concaveCount > 0) ? new CKMesh *[concaveCount] : NULL;
         float ballRadius = 1.0f;
 
-        if (recoveredShapeMesh)
-        {
-            convexMeshes[0] = recoveredShapeMesh;
-        }
-        else
-        {
-            for (int i = 0; i < convexCount; ++i)
-                convexMeshes[i] = (CKMesh *)beh->GetInputParameterObject(pos + i);
-        }
+        for (int i = 0; i < convexCount; ++i)
+            convexMeshes[i] = (CKMesh *)beh->GetInputParameterObject(pos + i);
         pos += convexCount;
 
         for (int j = 0; j < ballCount; ++j)
