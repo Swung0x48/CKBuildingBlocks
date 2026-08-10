@@ -1175,7 +1175,7 @@ void CKIpionManager::UpdateObjectWorldMatrix(IVP_Real_Object *obj)
         return;
 
     VxVector scale(1.0f, 1.0f, 1.0f);
-    ent->GetScale(&scale);
+    ent->GetScale(&scale, FALSE);
 
     IVP_U_Matrix mat;
     obj->get_m_world_f_object_AT(&mat);
