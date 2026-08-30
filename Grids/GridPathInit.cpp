@@ -121,7 +121,7 @@ CKERROR GridPathInitCallback(const CKBehaviorContext &behcontext)
     case CKM_BEHAVIORSETTINGSEDITED:
     {
         CKParameterIn *pin;
-        char name[10];
+        char name[32];
 
         // Force parameter input type to "layer type".
         // And rename to "layer i".

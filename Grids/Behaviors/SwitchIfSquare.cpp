@@ -148,7 +148,7 @@ CKERROR SwitchIfSquareCallBack(const CKBehaviorContext &behcontext)
         int c_pin = beh->GetInputParameterCount() - 2;
         int c_pout = beh->GetOutputParameterCount();
 
-        char out_str[15];
+        char out_str[32];
 
         while (c_out < c_pin) // we must add 'Outputs'
         {

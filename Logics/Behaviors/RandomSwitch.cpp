@@ -141,7 +141,7 @@ CKERROR RandomSwitchCallBack(const CKBehaviorContext &behcontext)
         int c_out = beh->GetOutputCount();
         int c_pin = beh->GetInputParameterCount();
 
-        char pin_str[10];
+        char pin_str[32];
 
         while (c_pin < c_out) // we must add 'Input Param'
         {

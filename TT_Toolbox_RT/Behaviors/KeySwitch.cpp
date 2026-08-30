@@ -80,7 +80,7 @@ CKERROR KeySwitchCallBack(const CKBehaviorContext &behcontext)
     {
         case CKM_BEHAVIOREDITED:
         {
-            char buf[12];
+            char buf[32];
             int outputCount = beh->GetOutputCount();
             int inputParamCount = beh->GetInputParameterCount();
             if (inputParamCount < outputCount)

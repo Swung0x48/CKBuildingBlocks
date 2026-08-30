@@ -125,7 +125,7 @@ CKERROR ParameterSelectorCallBack(const CKBehaviorContext &behcontext)
 
             int type_out = pout->GetType();
 
-            char in_str[10];
+            char in_str[32];
 
             while (c_in > c_pin) // we must add 'Input Parameters'
             {

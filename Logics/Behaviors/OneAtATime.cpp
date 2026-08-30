@@ -124,7 +124,7 @@ CKERROR OneAtATimeCallBack(const CKBehaviorContext &behcontext)
     {
         int c = beh->GetInputCount();
         int c_out = beh->GetOutputCount();
-        char out_str[10];
+        char out_str[32];
 
         while (c > c_out) // we must add 'Outputs'
         {

@@ -249,7 +249,7 @@ CKERROR MultiMeshMorpherCallBack(const CKBehaviorContext &behcontext)
 
         int c_pin = beh->GetInputParameterCount();
 
-        char pin_str[10];
+        char pin_str[32];
 
         while ((c_pin >> 1) < wanted_c_pin)
         { // we must add 'Input Param'

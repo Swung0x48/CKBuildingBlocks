@@ -66,38 +66,55 @@ int LoadMotorSettings(const CKBehaviorContext &behcontext)
     FILE *file = fopen(fileName, "rt");
     if (file)
     {
+        float motorVolume = 0.0f;
+        MotorChannelSettings channel1 = {0};
+        MotorChannelSettings channel2 = {0};
+        MotorChannelSettings channel3 = {0};
+
         // Read volume
-        fscanf(file, "Volume:%f\n", &g_MotorVolume);
+        const int volumeFields = fscanf(file, "Volume:%f\n", &motorVolume);
 
         // Read channel 1 settings (low speed)
-        fscanf(file, "PitchMax:%f PitchMin:%f vMax:%f vMin:%f vFadeIn:%f vFadeOut:%f\n",
-               &g_MotorChannel1.pitchMax,
-               &g_MotorChannel1.pitchMin,
-               &g_MotorChannel1.vMax,
-               &g_MotorChannel1.vMin,
-               &g_MotorChannel1.vFadeIn,
-               &g_MotorChannel1.vFadeOut);
+        const int channel1Fields = fscanf(file, "PitchMax:%f PitchMin:%f vMax:%f vMin:%f vFadeIn:%f vFadeOut:%f\n",
+                                          &channel1.pitchMax,
+                                          &channel1.pitchMin,
+                                          &channel1.vMax,
+                                          &channel1.vMin,
+                                          &channel1.vFadeIn,
+                                          &channel1.vFadeOut);
 
         // Read channel 2 settings (mid speed)
-        fscanf(file, "PitchMax:%f PitchMin:%f vMax:%f vMin:%f vFadeIn:%f vFadeOut:%f\n",
-               &g_MotorChannel2.pitchMax,
-               &g_MotorChannel2.pitchMin,
-               &g_MotorChannel2.vMax,
-               &g_MotorChannel2.vMin,
-               &g_MotorChannel2.vFadeIn,
-               &g_MotorChannel2.vFadeOut);
+        const int channel2Fields = fscanf(file, "PitchMax:%f PitchMin:%f vMax:%f vMin:%f vFadeIn:%f vFadeOut:%f\n",
+                                          &channel2.pitchMax,
+                                          &channel2.pitchMin,
+                                          &channel2.vMax,
+                                          &channel2.vMin,
+                                          &channel2.vFadeIn,
+                                          &channel2.vFadeOut);
 
         // Read channel 3 settings (high speed)
-        fscanf(file, "PitchMax:%f PitchMin:%f vMax:%f vMin:%f vFadeIn:%f vFadeOut:%f\n",
-               &g_MotorChannel3.pitchMax,
-               &g_MotorChannel3.pitchMin,
-               &g_MotorChannel3.vMax,
-               &g_MotorChannel3.vMin,
-               &g_MotorChannel3.vFadeIn,
-               &g_MotorChannel3.vFadeOut);
+        const int channel3Fields = fscanf(file, "PitchMax:%f PitchMin:%f vMax:%f vMin:%f vFadeIn:%f vFadeOut:%f\n",
+                                          &channel3.pitchMax,
+                                          &channel3.pitchMin,
+                                          &channel3.vMax,
+                                          &channel3.vMin,
+                                          &channel3.vFadeIn,
+                                          &channel3.vFadeOut);
 
         fclose(file);
-        beh->ActivateOutput(0, TRUE);
+        if (volumeFields == 1 && channel1Fields == 6 && channel2Fields == 6 && channel3Fields == 6)
+        {
+            g_MotorVolume = motorVolume;
+            g_MotorChannel1 = channel1;
+            g_MotorChannel2 = channel2;
+            g_MotorChannel3 = channel3;
+            beh->ActivateOutput(0, TRUE);
+        }
+        else
+        {
+            ctx->OutputToConsoleExBeep("Motor settings file is malformed!");
+            beh->ActivateOutput(1, TRUE);
+        }
     }
     else
     {

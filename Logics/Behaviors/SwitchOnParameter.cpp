@@ -194,7 +194,7 @@ CKERROR SwitchOnParameterCallBack(const CKBehaviorContext &behcontext)
         int c_out = beh->GetOutputCount();
         int c_pin = beh->GetInputParameterCount();
 
-        char pin_str[10];
+        char pin_str[32];
 
         CKParameterIn *pin1 = beh->GetInputParameter(0);
         if (!pin1)

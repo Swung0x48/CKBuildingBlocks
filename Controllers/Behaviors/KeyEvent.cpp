@@ -138,7 +138,7 @@ CKERROR KeyEventCallBack(const CKBehaviorContext &behcontext)
     {
         int c_pin = beh->GetInputParameterCount();
 
-        char name[20];
+        char name[32];
         CKParameterIn *pin;
         for (int a = 0; a < c_pin; a++)
         {

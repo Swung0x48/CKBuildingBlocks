@@ -234,7 +234,7 @@ CKERROR SetComponentCallBack(const CKBehaviorContext &behcontext)
     case CKM_BEHAVIOREDITED:
     {
         CKParameterOut *pout;
-        char out_str[20];
+        char out_str[32];
 
         int c = beh->GetInputParameterCount();
         pout = beh->GetOutputParameter(0);
