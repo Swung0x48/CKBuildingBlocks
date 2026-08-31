@@ -2,6 +2,7 @@
 #define PHYSICS_RT_PHYSICSCALLBACK_H
 
 #include "CKBehavior.h"
+#include "CKBeObject.h"
 
 #include "ivu_types.hxx"
 #include "ivu_vector.hxx"
@@ -12,19 +13,35 @@ class PhysicsCallback
 {
 public:
     PhysicsCallback()
-        : m_IpionManager(NULL), m_Type(0), m_BehaviorID(0), m_IsGameplayWrite(FALSE) {}
+        : m_IpionManager(NULL), m_Type(0), m_BehaviorID(0),
+          m_TargetID(0), m_SecondaryTargetID(0),
+          m_IsGameplayWrite(FALSE) {}
     PhysicsCallback(CKIpionManager *pm, CKBehavior *beh, int type,
                     CKBOOL isGameplayWrite = FALSE)
         : m_IpionManager(pm), m_Type(type), m_BehaviorID(beh ? beh->GetID() : 0),
+          m_TargetID(beh && beh->GetTarget() ? beh->GetTarget()->GetID() : 0),
+          m_SecondaryTargetID(0),
           m_IsGameplayWrite(isGameplayWrite ? TRUE : FALSE) {}
     virtual int Execute() = 0;
     virtual ~PhysicsCallback(){};
 
     CKBehavior *GetBehavior() const;
+    void SetSecondaryTarget(CKBeObject *target)
+    {
+        m_SecondaryTargetID = target ? target->GetID() : 0;
+    }
+    void UseWorldGameplayPolicy()
+    {
+        m_TargetID = 0;
+        m_SecondaryTargetID = 0;
+    }
+    CKBOOL IsGameplayWriteAllowed() const;
 
     CKIpionManager *m_IpionManager;
     int m_Type;
     CK_ID m_BehaviorID;
+    CK_ID m_TargetID;
+    CK_ID m_SecondaryTargetID;
     CKBOOL m_IsGameplayWrite;
 };
 

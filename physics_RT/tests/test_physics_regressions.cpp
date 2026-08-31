@@ -251,17 +251,17 @@ void GameplayWritePolicyCoversBehaviorGraphMutationPaths()
     const std::string globalsSource = ReadSource("physics_RT/Behaviors/SetPhysicsGlobals.cpp");
     const std::string physicalizeSource = ReadSource("physics_RT/Behaviors/Physicalize.cpp");
 
-    Check(callbackSource.find("pc->m_IsGameplayWrite") != std::string::npos &&
-              callbackSource.find("!m_IpionManager->AreGameplayWritesEnabled()") != std::string::npos,
-          "Deferred gameplay-write callbacks must remain pending in client-mirror mode");
-    Check(forceSource.find("!m_Manager->AreGameplayWritesEnabled()") != std::string::npos,
-          "A previously installed continuous force controller must pause in client-mirror mode");
-    Check(impulseSource.find("!man->AreGameplayWritesEnabled()") != std::string::npos &&
+    Check(callbackSource.find("pc->IsGameplayWriteAllowed()") != std::string::npos &&
+              callbackSource.find("cbs.remove_at(j)") != std::string::npos,
+          "Denied deferred gameplay callbacks must be consumed, never replayed after teardown");
+    Check(forceSource.find("CanGameplayWrite(m_TargetID)") != std::string::npos,
+          "A continuous force controller must consult its target CK_ID policy");
+    Check(impulseSource.find("!man->CanGameplayWrite(ent)") != std::string::npos &&
               resetSource.find("man->AreGameplayWritesEnabled()") != std::string::npos &&
               globalsSource.find("!man->AreGameplayWritesEnabled()") != std::string::npos,
-          "Immediate impulse/reset/global behavior writes must honor client-mirror mode");
-    Check(physicalizeSource.find("if (!man->AreGameplayWritesEnabled())") != std::string::npos,
-          "Behavior-graph unphysicalize must not destroy an authoritative mirrored body");
+          "Targeted impulse and world-global reset writes must use their respective policies");
+    Check(physicalizeSource.find("if (!man->CanGameplayWrite(ent))") != std::string::npos,
+          "Both Physicalize directions must honor the pre-body CK_ID policy");
 }
 
 void CheckPhysics(PhysicsRT_Result actual, PhysicsRT_Result expected, const char *message)
@@ -279,6 +279,14 @@ const PhysicsRT_ApiV1 *GetAuthorityApi()
     const PhysicsRT_ApiV1 *api = PhysicsRT_GetApi(PHYSICSRT_ABI_VERSION_1);
     Check(api != NULL, "PhysicsRT_GetApi(1) returned null");
     return api;
+}
+
+const PhysicsRT_ApiV2 *GetAuthorityApiV2()
+{
+    const PhysicsRT_ApiV1 *prefix =
+        PhysicsRT_GetApi(PHYSICSRT_ABI_VERSION_2);
+    Check(prefix != NULL, "PhysicsRT_GetApi(2) returned null");
+    return reinterpret_cast<const PhysicsRT_ApiV2 *>(prefix);
 }
 
 PhysicsRT_WorldHandle GetAuthorityWorld()
@@ -318,6 +326,8 @@ void AuthorityAbiLayoutAndVersioningAreStable()
     Check(sizeof(PhysicsRT_BodyState) == 80, "PhysicsRT_BodyState size changed");
     Check(sizeof(PhysicsRT_BallDesc) == 112, "PhysicsRT_BallDesc size changed");
     Check(sizeof(PhysicsRT_ForceCommand) == 40, "PhysicsRT_ForceCommand size changed");
+    Check(sizeof(PhysicsRT_GameplayWritePolicyEntry) == 16,
+          "PhysicsRT_GameplayWritePolicyEntry size changed");
     Check(offsetof(PhysicsRT_BodyState, body) == 8, "Body handle ABI offset changed");
     Check(offsetof(PhysicsRT_BodyState, position) == 24, "Body pose ABI offset changed");
 
@@ -325,7 +335,14 @@ void AuthorityAbiLayoutAndVersioningAreStable()
     Check(PhysicsRT_CAbiCompileProbe() != 0, "The C ABI compile/link probe failed");
     Check(api->struct_size == sizeof(PhysicsRT_ApiV1), "API function table size is wrong");
     Check(api->abi_version == PHYSICSRT_ABI_VERSION_1, "API function table version is wrong");
-    Check(PhysicsRT_GetApi(0) == NULL && PhysicsRT_GetApi(2) == NULL,
+    const PhysicsRT_ApiV2 *api2 = GetAuthorityApiV2();
+    Check(api2->v1.struct_size == sizeof(PhysicsRT_ApiV2) &&
+              api2->v1.abi_version == PHYSICSRT_ABI_VERSION_2 &&
+              api2->set_gameplay_write_policies != NULL &&
+              api2->get_gameplay_write_policies != NULL &&
+              api2->clear_gameplay_write_policies != NULL,
+          "API v2 table or per-CK policy functions are invalid");
+    Check(PhysicsRT_GetApi(0) == NULL && PhysicsRT_GetApi(3) == NULL,
           "Unsupported API versions must return null");
     Check(api->set_gameplay_writes_enabled != NULL &&
               api->get_gameplay_writes_enabled != NULL,
@@ -348,6 +365,13 @@ void AuthorityAbiLayoutAndVersioningAreStable()
     undersized.struct_size = sizeof(undersized) - 1;
     Check(api->get_build_info(&undersized) == PHYSICSRT_ERROR_INVALID_ARGUMENT,
           "Undersized build info must be rejected");
+
+    PhysicsRT_BuildInfo info2;
+    std::memset(&info2, 0, sizeof(info2));
+    info2.struct_size = sizeof(info2);
+    Check(api2->v1.get_build_info(&info2) == PHYSICSRT_OK &&
+              info2.abi_version == PHYSICSRT_ABI_VERSION_2,
+          "V2 build info did not report ABI version 2");
 }
 
 void AuthorityWorldRejectsCrossThreadAccess()
@@ -368,6 +392,7 @@ void AuthorityHandlesStateAndFixedSteppingAreDeterministic()
     PhysicsFixture &fixture = GetPhysicsFixture();
     CKIpionManager *manager = fixture.manager;
     const PhysicsRT_ApiV1 *api = GetAuthorityApi();
+    const PhysicsRT_ApiV2 *api2 = GetAuthorityApiV2();
     const PhysicsRT_WorldHandle world = GetAuthorityWorld();
 
     RCK3dObject entityA(fixture.context, "AuthorityBallA");
@@ -550,6 +575,40 @@ void AuthorityHandlesStateAndFixedSteppingAreDeterministic()
               gameplayWritesEnabled == 0,
           "Unable to enter client-mirror gameplay-write mode");
 
+    RCK3dObject prePhysicalizePolicyEntity(
+        fixture.context, "PrePhysicalizePolicyEntity");
+    PhysicsRT_GameplayWritePolicyEntry policyEntries[2] = {};
+    policyEntries[0].struct_size = sizeof(policyEntries[0]);
+    policyEntries[0].ck_id = entityA.GetID();
+    policyEntries[0].policy = PHYSICSRT_GAMEPLAY_WRITE_ALLOW;
+    policyEntries[1].struct_size = sizeof(policyEntries[1]);
+    policyEntries[1].ck_id = prePhysicalizePolicyEntity.GetID();
+    policyEntries[1].policy = PHYSICSRT_GAMEPLAY_WRITE_ALLOW;
+    Check(api2->set_gameplay_write_policies(world, policyEntries, 2) ==
+              PHYSICSRT_OK,
+          "Unable to set an atomic per-CK gameplay-write policy batch");
+    Check(manager->CanGameplayWrite(entityA.GetID()) &&
+              manager->CanGameplayWrite(prePhysicalizePolicyEntity.GetID()) &&
+              !manager->CanGameplayWrite(entityB.GetID()),
+          "Per-CK ALLOW did not override the denied world default before body creation");
+
+    policyEntries[0].policy = PHYSICSRT_GAMEPLAY_WRITE_INHERIT;
+    policyEntries[1].policy = PHYSICSRT_GAMEPLAY_WRITE_INHERIT;
+    Check(api2->get_gameplay_write_policies(world, policyEntries, 2) ==
+              PHYSICSRT_OK &&
+              policyEntries[0].policy == PHYSICSRT_GAMEPLAY_WRITE_ALLOW &&
+              policyEntries[1].policy == PHYSICSRT_GAMEPLAY_WRITE_ALLOW,
+          "Per-CK gameplay-write policy did not round trip");
+
+    PhysicsRT_GameplayWritePolicyEntry invalidPolicies[2] = {
+        policyEntries[0], policyEntries[0]};
+    invalidPolicies[0].policy = PHYSICSRT_GAMEPLAY_WRITE_DENY;
+    invalidPolicies[1].policy = PHYSICSRT_GAMEPLAY_WRITE_DENY;
+    Check(api2->set_gameplay_write_policies(world, invalidPolicies, 2) ==
+              PHYSICSRT_ERROR_INVALID_ARGUMENT &&
+              manager->CanGameplayWrite(entityA.GetID()),
+          "An invalid policy batch partially mutated an earlier entry");
+
     PhysicsRT_ForceCommand force;
     std::memset(&force, 0, sizeof(force));
     force.struct_size = sizeof(force);
@@ -583,6 +642,11 @@ void AuthorityHandlesStateAndFixedSteppingAreDeterministic()
               api->get_gameplay_writes_enabled(world, &gameplayWritesEnabled) == PHYSICSRT_OK &&
               gameplayWritesEnabled == 1,
           "Unable to restore legacy gameplay writes after client-mirror mode");
+    Check(api2->clear_gameplay_write_policies(world, NULL, 0) ==
+              PHYSICSRT_OK &&
+              manager->GetGameplayWritePolicy(entityA.GetID()) ==
+                  PHYSICSRT_GAMEPLAY_WRITE_INHERIT,
+          "Unable to clear per-CK gameplay-write policies at epoch teardown");
 
     Check(api->set_authority_mode(world, 0) == PHYSICSRT_OK,
           "Unable to restore legacy physics mode");

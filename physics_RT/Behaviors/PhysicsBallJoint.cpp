@@ -72,7 +72,10 @@ class PhysicsBallJointCallback : public PhysicsCallback
 {
 public:
     PhysicsBallJointCallback(CKIpionManager *man, CKBehavior *beh)
-        : PhysicsCallback(man, beh, 2, TRUE) {}
+        : PhysicsCallback(man, beh, 2, TRUE)
+    {
+        SetSecondaryTarget((CKBeObject *)beh->GetInputParameterObject(OBJECT2));
+    }
 
     virtual int Execute()
     {
@@ -162,7 +165,10 @@ int PhysicsBallJoint(const CKBehaviorContext &behcontext)
     CKContext *context = behcontext.Context;
 
     CKIpionManager *man = CKIpionManager::GetManager(context);
-    if (man && !man->AreGameplayWritesEnabled())
+    CK3dEntity *policyTarget = (CK3dEntity *)beh->GetTarget();
+    CK3dEntity *policyPeer = (CK3dEntity *)beh->GetInputParameterObject(OBJECT2);
+    if (man && (!man->CanGameplayWrite(policyTarget)
+        || (policyPeer && !man->CanGameplayWrite(policyPeer))))
     {
         const int input = beh->IsInputActive(0) ? 0 : 1;
         beh->ActivateInput(input, FALSE);

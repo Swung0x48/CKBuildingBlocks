@@ -33,6 +33,20 @@ CKBehavior *PhysicsCallback::GetBehavior() const
     return (CKBehavior *)obj;
 }
 
+CKBOOL PhysicsCallback::IsGameplayWriteAllowed() const
+{
+    if (!m_IsGameplayWrite)
+        return TRUE;
+    if (!m_IpionManager)
+        return FALSE;
+    if (m_TargetID == 0)
+        return m_IpionManager->AreGameplayWritesEnabled();
+    if (!m_IpionManager->CanGameplayWrite(m_TargetID))
+        return FALSE;
+    return m_SecondaryTargetID == 0
+        || m_IpionManager->CanGameplayWrite(m_SecondaryTargetID);
+}
+
 PhysicsCallbackContainer::~PhysicsCallbackContainer()
 {
     Clear();
@@ -102,9 +116,15 @@ void PhysicsCallbackContainer::Process()
                 continue;
             }
 
-            if (pc->m_IsGameplayWrite && m_IpionManager &&
-                !m_IpionManager->AreGameplayWritesEnabled())
+            if (pc->m_IsGameplayWrite && !pc->IsGameplayWriteAllowed())
+            {
+                // A denied edge belongs to the discarded local prediction
+                // path.  It must never remain queued and fire after authority
+                // mode is disabled during teardown.
+                cbs.remove_at(j);
+                delete pc;
                 continue;
+            }
 
             if (pc->Execute() == 0)
                 continue;
@@ -131,18 +151,9 @@ void PhysicsCallbackContainer::Process(PhysicsCallback *pc)
         return;
     }
 
-    if (pc->m_IsGameplayWrite && m_IpionManager &&
-        !m_IpionManager->AreGameplayWritesEnabled())
+    if (pc->m_IsGameplayWrite && !pc->IsGameplayWriteAllowed())
     {
-        if (0 <= pc->m_Type && pc->m_Type < 3)
-        {
-            m_Callbacks[pc->m_Type].add(pc);
-            m_HasCallbacks = TRUE;
-        }
-        else
-        {
-            delete pc;
-        }
+        delete pc;
         return;
     }
 

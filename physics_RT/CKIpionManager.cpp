@@ -259,6 +259,7 @@ CKERROR CKIpionManager::OnCKPostReset()
 
     ClearCollisionSurfaces();
     ClearLiquidSurfaces();
+    ClearGameplayWritePolicies();
 
     return CK_OK;
 }
@@ -272,6 +273,7 @@ CKERROR CKIpionManager::PostClearAll()
 
     ClearCollisionSurfaces();
     ClearLiquidSurfaces();
+    ClearGameplayWritePolicies();
 
     return CK_OK;
 }
@@ -291,6 +293,7 @@ CKERROR CKIpionManager::SequenceToBeDeleted(CK_ID *objids, int count)
 {
     for (int i = 0; i < count; ++i)
     {
+        ClearGameplayWritePolicy(objids[i]);
         CKObject *obj = m_Context->GetObject(objids[i]);
         if (CKIsChildClassOf(obj, CKCID_3DENTITY))
         {
@@ -690,6 +693,7 @@ void CKIpionManager::CreateEnvironment()
 void CKIpionManager::DestroyEnvironment(CKBOOL resetBehaviorHandles)
 {
     PhysicsRT_InternalInvalidateAllBodies(this);
+    ClearGameplayWritePolicies();
 
     // CK shutdown can tear the environment down while clearing objects, before
     // OnCKEnd and manager deletion.  Later calls can happen after CKObjectManager
@@ -803,6 +807,56 @@ void CKIpionManager::SetAuthorityMode(CKBOOL enabled)
 
     if (m_Environment && m_AuthorityMode)
         m_Environment->set_delta_PSI_time(1.0 / (double)PHYSICSRT_FIXED_TICK_HZ);
+}
+
+CKBOOL CKIpionManager::CanGameplayWrite(CK_ID ckId) const
+{
+    std::map<CK_ID, PhysicsRT_GameplayWritePolicy>::const_iterator it =
+        m_GameplayWritePolicies.find(ckId);
+    if (it == m_GameplayWritePolicies.end()
+        || it->second == PHYSICSRT_GAMEPLAY_WRITE_INHERIT)
+        return m_GameplayWritesEnabled;
+    return it->second == PHYSICSRT_GAMEPLAY_WRITE_ALLOW ? TRUE : FALSE;
+}
+
+CKBOOL CKIpionManager::CanGameplayWrite(CK3dEntity *entity) const
+{
+    return entity ? CanGameplayWrite(entity->GetID()) : m_GameplayWritesEnabled;
+}
+
+CKBOOL CKIpionManager::CanGameplayWritePair(CK3dEntity *first,
+                                             CK3dEntity *second) const
+{
+    return first && second && CanGameplayWrite(first)
+        && CanGameplayWrite(second);
+}
+
+PhysicsRT_GameplayWritePolicy CKIpionManager::GetGameplayWritePolicy(
+    CK_ID ckId) const
+{
+    std::map<CK_ID, PhysicsRT_GameplayWritePolicy>::const_iterator it =
+        m_GameplayWritePolicies.find(ckId);
+    return it == m_GameplayWritePolicies.end()
+        ? PHYSICSRT_GAMEPLAY_WRITE_INHERIT : it->second;
+}
+
+void CKIpionManager::SetGameplayWritePolicy(
+    CK_ID ckId, PhysicsRT_GameplayWritePolicy policy)
+{
+    if (policy == PHYSICSRT_GAMEPLAY_WRITE_INHERIT)
+        m_GameplayWritePolicies.erase(ckId);
+    else
+        m_GameplayWritePolicies[ckId] = policy;
+}
+
+void CKIpionManager::ClearGameplayWritePolicy(CK_ID ckId)
+{
+    m_GameplayWritePolicies.erase(ckId);
+}
+
+void CKIpionManager::ClearGameplayWritePolicies()
+{
+    m_GameplayWritePolicies.clear();
 }
 
 CKBOOL CKIpionManager::StepAuthoritySimulation()

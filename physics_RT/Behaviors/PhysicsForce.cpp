@@ -68,10 +68,12 @@ CKERROR CreatePhysicsForceProto(CKBehaviorPrototype **pproto)
 class PhysicsControllerForce : public IVP_Controller_Independent
 {
 public:
-    PhysicsControllerForce(CKIpionManager *manager, IVP_Real_Object *obj,
+    PhysicsControllerForce(CKIpionManager *manager, CK_ID targetId,
+                           IVP_Real_Object *obj,
                            const IVP_U_Point &pos, const IVP_U_Point &force)
     {
         m_Manager = manager;
+        m_TargetID = targetId;
         m_Core = obj->get_core();
         m_Position = pos;
         m_Force = force;
@@ -97,7 +99,7 @@ public:
 
     void do_simulation_controller(IVP_Event_Sim *es, IVP_U_Vector<IVP_Core> *core_list)
     {
-        if (!m_Manager || !m_Manager->AreGameplayWritesEnabled())
+        if (!m_Manager || !m_Manager->CanGameplayWrite(m_TargetID))
             return;
 
         if (core_list && core_list->len() != 0)
@@ -118,6 +120,7 @@ public:
     IVP_CONTROLLER_PRIORITY get_controller_priority() { return IVP_CP_ACTUATOR; };
 
     CKIpionManager *m_Manager;
+    CK_ID m_TargetID;
     IVP_Core *m_Core;
     IVP_U_Point m_Position;
     IVP_U_Point m_Force;
@@ -187,7 +190,8 @@ public:
         }
 
         PhysicsControllerForce *controller =
-            new PhysicsControllerForce(m_IpionManager, obj, pos, force);
+            new PhysicsControllerForce(m_IpionManager, ent->GetID(), obj,
+                                       pos, force);
         beh->SetLocalParameterValue(0, &controller);
 
         return 1;
@@ -223,14 +227,9 @@ int PhysicsForce(const CKBehaviorContext &behcontext)
     }
     else
     {
-        CKIpionManager *man = CKIpionManager::GetManager(context);
-        if (man && !man->AreGameplayWritesEnabled())
-        {
-            beh->ActivateInput(1, FALSE);
-            beh->ActivateOutput(1, TRUE);
-            return CKBR_OK;
-        }
-
+        // Stopping is cleanup, not a new local physics write.  Always retire
+        // the controller so a denied authority-era edge cannot resume after
+        // the room restores the legacy default policy.
         if (controller)
         {
             delete controller;

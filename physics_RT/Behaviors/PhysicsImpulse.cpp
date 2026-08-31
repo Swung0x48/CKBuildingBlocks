@@ -77,7 +77,7 @@ int PhysicsImpulse(const CKBehaviorContext &behcontext)
     if (!man || !man->GetEnvironment())
         return CKBR_GENERICERROR;
 
-    if (!man->AreGameplayWritesEnabled())
+    if (!man->CanGameplayWrite(ent))
     {
         beh->ActivateInput(0, FALSE);
         beh->ActivateOutput(0, TRUE);

@@ -49,7 +49,10 @@ class DeleteCollisionSurfacesCallback : public PhysicsCallback
 {
 public:
     DeleteCollisionSurfacesCallback(CKIpionManager *man, CKBehavior *beh)
-        : PhysicsCallback(man, beh, 2, TRUE) {}
+        : PhysicsCallback(man, beh, 2, TRUE)
+    {
+        UseWorldGameplayPolicy();
+    }
 
     virtual int Execute()
     {

@@ -30,6 +30,10 @@ static_assert(sizeof(PhysicsRT_BodyRef) == 16, "PhysicsRT_BodyRef ABI layout cha
 static_assert(sizeof(PhysicsRT_BodyState) == 80, "PhysicsRT_BodyState ABI layout changed");
 static_assert(sizeof(PhysicsRT_BallDesc) == 112, "PhysicsRT_BallDesc ABI layout changed");
 static_assert(sizeof(PhysicsRT_ForceCommand) == 40, "PhysicsRT_ForceCommand ABI layout changed");
+static_assert(sizeof(PhysicsRT_GameplayWritePolicyEntry) == 16,
+              "PhysicsRT_GameplayWritePolicyEntry ABI layout changed");
+static_assert(offsetof(PhysicsRT_ApiV2, v1) == 0,
+              "PhysicsRT_ApiV2 must preserve the V1 binary prefix");
 static_assert(PHYSICSRT_COLLISION_GROUP_CAPACITY == IVP_NO_COLL_GROUP_STRING_LEN,
               "Public and IVP collision group capacities differ");
 static_assert(offsetof(PhysicsRT_BodyState, body) == 8, "PhysicsRT_BodyState handle offset changed");
@@ -361,7 +365,8 @@ PhysicsRT_Result SetBodyStatesCommon(PhysicsRT_WorldHandle world,
     return PHYSICSRT_OK;
 }
 
-PhysicsRT_Result PHYSICSRT_CALL GetBuildInfoImpl(PhysicsRT_BuildInfo *outInfo)
+PhysicsRT_Result GetBuildInfoForVersion(PhysicsRT_BuildInfo *outInfo,
+                                        uint32_t abiVersion)
 {
     if (!outInfo || outInfo->struct_size < sizeof(PhysicsRT_BuildInfo))
         return PHYSICSRT_ERROR_INVALID_ARGUMENT;
@@ -369,13 +374,25 @@ PhysicsRT_Result PHYSICSRT_CALL GetBuildInfoImpl(PhysicsRT_BuildInfo *outInfo)
     PhysicsRT_BuildInfo info;
     std::memset(&info, 0, sizeof(info));
     info.struct_size = sizeof(info);
-    info.abi_version = PHYSICSRT_ABI_VERSION_1;
+    info.abi_version = abiVersion;
     CopyBuildId(info.source_build_id, PHYSICSRT_SOURCE_BUILD_ID);
     CopyBuildId(info.solver_compatibility_id, PHYSICSRT_SOLVER_COMPATIBILITY_ID);
     info.fixed_step_seconds = 1.0f / (float)PHYSICSRT_FIXED_TICK_HZ;
     info.max_fixed_steps_per_call = PHYSICSRT_MAX_FIXED_STEPS_PER_CALL;
     *outInfo = info;
     return PHYSICSRT_OK;
+}
+
+PhysicsRT_Result PHYSICSRT_CALL GetBuildInfoV1Impl(
+    PhysicsRT_BuildInfo *outInfo)
+{
+    return GetBuildInfoForVersion(outInfo, PHYSICSRT_ABI_VERSION_1);
+}
+
+PhysicsRT_Result PHYSICSRT_CALL GetBuildInfoV2Impl(
+    PhysicsRT_BuildInfo *outInfo)
+{
+    return GetBuildInfoForVersion(outInfo, PHYSICSRT_ABI_VERSION_2);
 }
 
 PhysicsRT_Result PHYSICSRT_CALL AcquireWorldImpl(void *ckContext, PhysicsRT_WorldHandle *outWorld)
@@ -450,6 +467,120 @@ PhysicsRT_Result PHYSICSRT_CALL GetGameplayWritesEnabledImpl(
     if (result != PHYSICSRT_OK)
         return result;
     *outEnabled = resolved.manager->AreGameplayWritesEnabled() ? 1u : 0u;
+    return PHYSICSRT_OK;
+}
+
+bool ValidGameplayWritePolicy(uint32_t policy)
+{
+    return policy <= (uint32_t)PHYSICSRT_GAMEPLAY_WRITE_DENY;
+}
+
+PhysicsRT_Result ValidateGameplayWritePolicyTarget(
+    const ResolvedWorld &world, int32_t ckId)
+{
+    if (ckId <= 0 || !world.context)
+        return PHYSICSRT_ERROR_INVALID_ARGUMENT;
+    CKObject *object = world.context->GetObject((CK_ID)ckId);
+    return CK3dEntity::Cast(object) ? PHYSICSRT_OK
+                                    : PHYSICSRT_ERROR_INVALID_ARGUMENT;
+}
+
+PhysicsRT_Result PHYSICSRT_CALL SetGameplayWritePoliciesImpl(
+    PhysicsRT_WorldHandle world,
+    const PhysicsRT_GameplayWritePolicyEntry *entries,
+    uint32_t entryCount)
+{
+    if (entryCount > PHYSICSRT_MAX_GAMEPLAY_WRITE_POLICIES)
+        return PHYSICSRT_ERROR_LIMIT_EXCEEDED;
+    if (entryCount != 0 && !entries)
+        return PHYSICSRT_ERROR_INVALID_ARGUMENT;
+
+    ResolvedWorld resolved;
+    PhysicsRT_Result result = ResolveWorld(world, &resolved);
+    if (result != PHYSICSRT_OK)
+        return result;
+
+    std::set<int32_t> uniqueIds;
+    for (uint32_t i = 0; i < entryCount; ++i)
+    {
+        const PhysicsRT_GameplayWritePolicyEntry &entry = entries[i];
+        if (entry.struct_size != sizeof(PhysicsRT_GameplayWritePolicyEntry) ||
+            entry.reserved != 0 || !ValidGameplayWritePolicy(entry.policy) ||
+            !uniqueIds.insert(entry.ck_id).second)
+            return PHYSICSRT_ERROR_INVALID_ARGUMENT;
+        result = ValidateGameplayWritePolicyTarget(resolved, entry.ck_id);
+        if (result != PHYSICSRT_OK)
+            return result;
+    }
+
+    for (uint32_t i = 0; i < entryCount; ++i)
+        resolved.manager->SetGameplayWritePolicy(
+            (CK_ID)entries[i].ck_id,
+            (PhysicsRT_GameplayWritePolicy)entries[i].policy);
+    return PHYSICSRT_OK;
+}
+
+PhysicsRT_Result PHYSICSRT_CALL GetGameplayWritePoliciesImpl(
+    PhysicsRT_WorldHandle world,
+    PhysicsRT_GameplayWritePolicyEntry *entries,
+    uint32_t entryCount)
+{
+    if (entryCount > PHYSICSRT_MAX_GAMEPLAY_WRITE_POLICIES)
+        return PHYSICSRT_ERROR_LIMIT_EXCEEDED;
+    if (entryCount != 0 && !entries)
+        return PHYSICSRT_ERROR_INVALID_ARGUMENT;
+
+    ResolvedWorld resolved;
+    PhysicsRT_Result result = ResolveWorld(world, &resolved);
+    if (result != PHYSICSRT_OK)
+        return result;
+
+    std::set<int32_t> uniqueIds;
+    for (uint32_t i = 0; i < entryCount; ++i)
+    {
+        if (entries[i].struct_size !=
+                sizeof(PhysicsRT_GameplayWritePolicyEntry) ||
+            entries[i].reserved != 0 ||
+            !uniqueIds.insert(entries[i].ck_id).second)
+            return PHYSICSRT_ERROR_INVALID_ARGUMENT;
+        result = ValidateGameplayWritePolicyTarget(resolved, entries[i].ck_id);
+        if (result != PHYSICSRT_OK)
+            return result;
+    }
+
+    for (uint32_t i = 0; i < entryCount; ++i)
+    {
+        entries[i].policy = (uint32_t)resolved.manager->GetGameplayWritePolicy(
+            (CK_ID)entries[i].ck_id);
+        entries[i].reserved = 0;
+    }
+    return PHYSICSRT_OK;
+}
+
+PhysicsRT_Result PHYSICSRT_CALL ClearGameplayWritePoliciesImpl(
+    PhysicsRT_WorldHandle world, const int32_t *ckIds, uint32_t ckIdCount)
+{
+    if (ckIdCount > PHYSICSRT_MAX_GAMEPLAY_WRITE_POLICIES)
+        return PHYSICSRT_ERROR_LIMIT_EXCEEDED;
+    if (ckIdCount != 0 && !ckIds)
+        return PHYSICSRT_ERROR_INVALID_ARGUMENT;
+
+    ResolvedWorld resolved;
+    PhysicsRT_Result result = ResolveWorld(world, &resolved);
+    if (result != PHYSICSRT_OK)
+        return result;
+    if (ckIdCount == 0)
+    {
+        resolved.manager->ClearGameplayWritePolicies();
+        return PHYSICSRT_OK;
+    }
+
+    std::set<int32_t> uniqueIds;
+    for (uint32_t i = 0; i < ckIdCount; ++i)
+        if (ckIds[i] <= 0 || !uniqueIds.insert(ckIds[i]).second)
+            return PHYSICSRT_ERROR_INVALID_ARGUMENT;
+    for (uint32_t i = 0; i < ckIdCount; ++i)
+        resolved.manager->ClearGameplayWritePolicy((CK_ID)ckIds[i]);
     return PHYSICSRT_OK;
 }
 
@@ -837,7 +968,7 @@ PhysicsRT_Result PHYSICSRT_CALL ApplyImpulsesImpl(PhysicsRT_WorldHandle world,
 const PhysicsRT_ApiV1 kApiV1 = {
     sizeof(PhysicsRT_ApiV1),
     PHYSICSRT_ABI_VERSION_1,
-    &GetBuildInfoImpl,
+    &GetBuildInfoV1Impl,
     &AcquireWorldImpl,
     &ValidateWorldImpl,
     &SetAuthorityModeImpl,
@@ -856,6 +987,35 @@ const PhysicsRT_ApiV1 kApiV1 = {
     &CaptureBallDescImpl,
     &SetGameplayWritesEnabledImpl,
     &GetGameplayWritesEnabledImpl,
+};
+
+const PhysicsRT_ApiV2 kApiV2 = {
+    {
+        sizeof(PhysicsRT_ApiV2),
+        PHYSICSRT_ABI_VERSION_2,
+        &GetBuildInfoV2Impl,
+        &AcquireWorldImpl,
+        &ValidateWorldImpl,
+        &SetAuthorityModeImpl,
+        &GetAuthorityModeImpl,
+        &StepFixedImpl,
+        &FindBodyByCkIdImpl,
+        &EnumerateBodiesImpl,
+        &ValidateBodyImpl,
+        &CreateBallImpl,
+        &DestroyBodyImpl,
+        &GetBodyStatesImpl,
+        &SetBodyStatesImpl,
+        &ReconcileBodyStatesImpl,
+        &ApplyForcesImpl,
+        &ApplyImpulsesImpl,
+        &CaptureBallDescImpl,
+        &SetGameplayWritesEnabledImpl,
+        &GetGameplayWritesEnabledImpl,
+    },
+    &SetGameplayWritePoliciesImpl,
+    &GetGameplayWritePoliciesImpl,
+    &ClearGameplayWritePoliciesImpl,
 };
 
 } // namespace
@@ -958,5 +1118,9 @@ void PhysicsRT_InternalInvalidateAllBodies(CKIpionManager *manager)
 extern "C" PHYSICSRT_PUBLIC const PhysicsRT_ApiV1 *PHYSICSRT_CALL
 PhysicsRT_GetApi(uint32_t requestedAbiVersion)
 {
-    return requestedAbiVersion == PHYSICSRT_ABI_VERSION_1 ? &kApiV1 : NULL;
+    if (requestedAbiVersion == PHYSICSRT_ABI_VERSION_1)
+        return &kApiV1;
+    if (requestedAbiVersion == PHYSICSRT_ABI_VERSION_2)
+        return &kApiV2.v1;
+    return NULL;
 }

@@ -29,6 +29,9 @@
 
 #include "PhysicsCallback.h"
 #include "PhysicsContact.h"
+#include "PhysicsRTApi.h"
+
+#include <map>
 
 #define TERRATOOLS_GUID CKGUID(0x56495254, 0x4f4f4c53)
 #define TT_PHYSICS_MANAGER_GUID CKGUID(0x6BED328B, 0x141F5148)
@@ -175,6 +178,14 @@ public:
         m_GameplayWritesEnabled = enabled ? TRUE : FALSE;
     }
     CKBOOL AreGameplayWritesEnabled() const { return m_GameplayWritesEnabled; }
+    CKBOOL CanGameplayWrite(CK_ID ckId) const;
+    CKBOOL CanGameplayWrite(CK3dEntity *entity) const;
+    CKBOOL CanGameplayWritePair(CK3dEntity *first, CK3dEntity *second) const;
+    PhysicsRT_GameplayWritePolicy GetGameplayWritePolicy(CK_ID ckId) const;
+    void SetGameplayWritePolicy(CK_ID ckId,
+                                PhysicsRT_GameplayWritePolicy policy);
+    void ClearGameplayWritePolicy(CK_ID ckId);
+    void ClearGameplayWritePolicies();
     CKBOOL StepAuthoritySimulation();
     float GetForceDeltaSeconds() const;
 
@@ -255,6 +266,7 @@ public:
     float m_PhysicsTimeFactor;
     CKBOOL m_AuthorityMode;
     CKBOOL m_GameplayWritesEnabled;
+    std::map<CK_ID, PhysicsRT_GameplayWritePolicy> m_GameplayWritePolicies;
     int m_CallbackProcessingDepth;
     CKBOOL m_ResetRequested;
     int m_HasPhysicsCalls;

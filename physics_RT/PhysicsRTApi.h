@@ -32,10 +32,12 @@ extern "C" {
 #endif
 
 #define PHYSICSRT_ABI_VERSION_1 UINT32_C(1)
+#define PHYSICSRT_ABI_VERSION_2 UINT32_C(2)
 #define PHYSICSRT_FIXED_TICK_HZ UINT32_C(66)
 #define PHYSICSRT_MAX_FIXED_STEPS_PER_CALL UINT32_C(8)
 #define PHYSICSRT_BUILD_ID_CAPACITY UINT32_C(65)
 #define PHYSICSRT_COLLISION_GROUP_CAPACITY UINT32_C(8)
+#define PHYSICSRT_MAX_GAMEPLAY_WRITE_POLICIES UINT32_C(4096)
 
 typedef uint64_t PhysicsRT_WorldHandle;
 typedef uint64_t PhysicsRT_BodyHandle;
@@ -78,6 +80,21 @@ typedef enum PhysicsRT_ForceFlags
     /* Ignore point_world and apply the command at the center of mass. */
     PHYSICSRT_FORCE_AT_CENTER = UINT32_C(1) << 0
 } PhysicsRT_ForceFlags;
+
+typedef enum PhysicsRT_GameplayWritePolicy
+{
+    PHYSICSRT_GAMEPLAY_WRITE_INHERIT = 0,
+    PHYSICSRT_GAMEPLAY_WRITE_ALLOW = 1,
+    PHYSICSRT_GAMEPLAY_WRITE_DENY = 2
+} PhysicsRT_GameplayWritePolicy;
+
+typedef struct PhysicsRT_GameplayWritePolicyEntry
+{
+    uint32_t struct_size;
+    int32_t ck_id;
+    uint32_t policy;
+    uint32_t reserved;
+} PhysicsRT_GameplayWritePolicyEntry;
 
 typedef struct PhysicsRT_BuildInfo
 {
@@ -188,6 +205,18 @@ typedef PhysicsRT_Result(PHYSICSRT_CALL *PhysicsRT_SetGameplayWritesEnabledFn)(
 typedef PhysicsRT_Result(PHYSICSRT_CALL *PhysicsRT_GetGameplayWritesEnabledFn)(
     PhysicsRT_WorldHandle world,
     uint32_t *out_enabled);
+typedef PhysicsRT_Result(PHYSICSRT_CALL *PhysicsRT_SetGameplayWritePoliciesFn)(
+    PhysicsRT_WorldHandle world,
+    const PhysicsRT_GameplayWritePolicyEntry *entries,
+    uint32_t entry_count);
+typedef PhysicsRT_Result(PHYSICSRT_CALL *PhysicsRT_GetGameplayWritePoliciesFn)(
+    PhysicsRT_WorldHandle world,
+    PhysicsRT_GameplayWritePolicyEntry *entries,
+    uint32_t entry_count);
+typedef PhysicsRT_Result(PHYSICSRT_CALL *PhysicsRT_ClearGameplayWritePoliciesFn)(
+    PhysicsRT_WorldHandle world,
+    const int32_t *ck_ids,
+    uint32_t ck_id_count);
 
 typedef struct PhysicsRT_ApiV1
 {
@@ -227,7 +256,23 @@ typedef struct PhysicsRT_ApiV1
     PhysicsRT_GetGameplayWritesEnabledFn get_gameplay_writes_enabled;
 } PhysicsRT_ApiV1;
 
-/* Returns NULL for every unsupported ABI version. */
+/*
+ * V2 preserves the complete V1 table as its binary prefix and adds atomic,
+ * per-CK-entity gameplay-write policy.  This is keyed by CK_ID because a
+ * Physicalize graph must be authorized before a body handle exists.
+ */
+typedef struct PhysicsRT_ApiV2
+{
+    PhysicsRT_ApiV1 v1;
+    PhysicsRT_SetGameplayWritePoliciesFn set_gameplay_write_policies;
+    PhysicsRT_GetGameplayWritePoliciesFn get_gameplay_write_policies;
+    PhysicsRT_ClearGameplayWritePoliciesFn clear_gameplay_write_policies;
+} PhysicsRT_ApiV2;
+
+/*
+ * Returns NULL for every unsupported ABI version.  For version 2, cast the
+ * returned V1-prefix pointer to `const PhysicsRT_ApiV2 *`.
+ */
 PHYSICSRT_PUBLIC const PhysicsRT_ApiV1 *PHYSICSRT_CALL PhysicsRT_GetApi(uint32_t requested_abi_version);
 
 #ifdef __cplusplus
