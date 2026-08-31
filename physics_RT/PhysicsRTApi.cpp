@@ -420,6 +420,32 @@ PhysicsRT_Result PHYSICSRT_CALL GetAuthorityModeImpl(PhysicsRT_WorldHandle world
     return PHYSICSRT_OK;
 }
 
+PhysicsRT_Result PHYSICSRT_CALL SetGameplayWritesEnabledImpl(
+    PhysicsRT_WorldHandle world, uint32_t enabled)
+{
+    if (enabled > 1u)
+        return PHYSICSRT_ERROR_INVALID_ARGUMENT;
+    ResolvedWorld resolved;
+    PhysicsRT_Result result = ResolveWorld(world, &resolved);
+    if (result != PHYSICSRT_OK)
+        return result;
+    resolved.manager->SetGameplayWritesEnabled(enabled != 0 ? TRUE : FALSE);
+    return PHYSICSRT_OK;
+}
+
+PhysicsRT_Result PHYSICSRT_CALL GetGameplayWritesEnabledImpl(
+    PhysicsRT_WorldHandle world, uint32_t *outEnabled)
+{
+    if (!outEnabled)
+        return PHYSICSRT_ERROR_INVALID_ARGUMENT;
+    ResolvedWorld resolved;
+    PhysicsRT_Result result = ResolveWorld(world, &resolved);
+    if (result != PHYSICSRT_OK)
+        return result;
+    *outEnabled = resolved.manager->AreGameplayWritesEnabled() ? 1u : 0u;
+    return PHYSICSRT_OK;
+}
+
 PhysicsRT_Result PHYSICSRT_CALL StepFixedImpl(PhysicsRT_WorldHandle world, uint32_t tickCount)
 {
     if (tickCount == 0)
@@ -821,6 +847,8 @@ const PhysicsRT_ApiV1 kApiV1 = {
     &ApplyForcesImpl,
     &ApplyImpulsesImpl,
     &CaptureBallDescImpl,
+    &SetGameplayWritesEnabledImpl,
+    &GetGameplayWritesEnabledImpl,
 };
 
 } // namespace

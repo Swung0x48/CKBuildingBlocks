@@ -213,6 +213,12 @@ int Physicalize(const CKBehaviorContext &behcontext)
         ++man->m_DePhysicalizeCalls;
         beh->ActivateInput(1, FALSE);
 
+        if (!man->AreGameplayWritesEnabled())
+        {
+            beh->ActivateOutput(1, TRUE);
+            return CKBR_OK;
+        }
+
         PhysicsObject *po = man->GetPhysicsObject(ent);
         if (po)
         {

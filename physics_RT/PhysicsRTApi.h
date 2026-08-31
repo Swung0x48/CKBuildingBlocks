@@ -182,6 +182,12 @@ typedef PhysicsRT_Result(PHYSICSRT_CALL *PhysicsRT_ApplyCommandsFn)(PhysicsRT_Wo
 typedef PhysicsRT_Result(PHYSICSRT_CALL *PhysicsRT_CaptureBallDescFn)(PhysicsRT_WorldHandle world,
                                                                      PhysicsRT_BodyHandle body,
                                                                      PhysicsRT_BallDesc *out_desc);
+typedef PhysicsRT_Result(PHYSICSRT_CALL *PhysicsRT_SetGameplayWritesEnabledFn)(
+    PhysicsRT_WorldHandle world,
+    uint32_t enabled);
+typedef PhysicsRT_Result(PHYSICSRT_CALL *PhysicsRT_GetGameplayWritesEnabledFn)(
+    PhysicsRT_WorldHandle world,
+    uint32_t *out_enabled);
 
 typedef struct PhysicsRT_ApiV1
 {
@@ -210,6 +216,15 @@ typedef struct PhysicsRT_ApiV1
      * static bodies are rejected rather than approximated.
      */
     PhysicsRT_CaptureBallDescFn capture_ball_desc;
+    /*
+     * Client mirrors set this policy to zero while an authoritative room is
+     * running. It suppresses CK behavior-graph writes (force, impulse,
+     * wake/reset and new constraints) without disabling this C API's
+     * reconcile/prediction commands. The default is enabled so headless
+     * authoritative worlds and legacy clients preserve normal gameplay.
+     */
+    PhysicsRT_SetGameplayWritesEnabledFn set_gameplay_writes_enabled;
+    PhysicsRT_GetGameplayWritesEnabledFn get_gameplay_writes_enabled;
 } PhysicsRT_ApiV1;
 
 /* Returns NULL for every unsupported ABI version. */

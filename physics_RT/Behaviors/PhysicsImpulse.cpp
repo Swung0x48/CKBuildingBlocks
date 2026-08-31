@@ -77,6 +77,13 @@ int PhysicsImpulse(const CKBehaviorContext &behcontext)
     if (!man || !man->GetEnvironment())
         return CKBR_GENERICERROR;
 
+    if (!man->AreGameplayWritesEnabled())
+    {
+        beh->ActivateInput(0, FALSE);
+        beh->ActivateOutput(0, TRUE);
+        return CKBR_OK;
+    }
+
     CKBOOL twoPosInsteadOfDir = FALSE;
     beh->GetLocalParameterValue(0, &twoPosInsteadOfDir);
 

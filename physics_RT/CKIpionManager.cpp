@@ -192,6 +192,7 @@ CKIpionManager::CKIpionManager(CKContext *context)
     m_PhysicsDeltaTime = 0.0f;
     m_PhysicsTimeFactor = 0.001f;
     m_AuthorityMode = FALSE;
+    m_GameplayWritesEnabled = TRUE;
     m_CallbackProcessingDepth = 0;
     m_ResetRequested = FALSE;
 

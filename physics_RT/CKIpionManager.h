@@ -170,6 +170,11 @@ public:
 
     void SetAuthorityMode(CKBOOL enabled);
     CKBOOL IsAuthorityMode() const { return m_AuthorityMode; }
+    void SetGameplayWritesEnabled(CKBOOL enabled)
+    {
+        m_GameplayWritesEnabled = enabled ? TRUE : FALSE;
+    }
+    CKBOOL AreGameplayWritesEnabled() const { return m_GameplayWritesEnabled; }
     CKBOOL StepAuthoritySimulation();
     float GetForceDeltaSeconds() const;
 
@@ -249,6 +254,7 @@ public:
     float m_PhysicsDeltaTime;
     float m_PhysicsTimeFactor;
     CKBOOL m_AuthorityMode;
+    CKBOOL m_GameplayWritesEnabled;
     int m_CallbackProcessingDepth;
     CKBOOL m_ResetRequested;
     int m_HasPhysicsCalls;

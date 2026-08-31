@@ -82,7 +82,8 @@ CKERROR CreatePhysicsBuoyancyProto(CKBehaviorPrototype **pproto)
 class PhysicsBuoyancyCallback : public PhysicsCallback
 {
 public:
-    PhysicsBuoyancyCallback(CKIpionManager *man, CKBehavior *beh) : PhysicsCallback(man, beh, 2) {}
+    PhysicsBuoyancyCallback(CKIpionManager *man, CKBehavior *beh)
+        : PhysicsCallback(man, beh, 2, TRUE) {}
 
     virtual int Execute()
     {

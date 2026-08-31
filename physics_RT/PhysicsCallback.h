@@ -11,9 +11,12 @@ class CKIpionManager;
 class PhysicsCallback
 {
 public:
-    PhysicsCallback() : m_IpionManager(NULL), m_Type(0), m_BehaviorID(0) {}
-    PhysicsCallback(CKIpionManager *pm, CKBehavior *beh, int type)
-        : m_IpionManager(pm), m_Type(type), m_BehaviorID(beh ? beh->GetID() : 0) {}
+    PhysicsCallback()
+        : m_IpionManager(NULL), m_Type(0), m_BehaviorID(0), m_IsGameplayWrite(FALSE) {}
+    PhysicsCallback(CKIpionManager *pm, CKBehavior *beh, int type,
+                    CKBOOL isGameplayWrite = FALSE)
+        : m_IpionManager(pm), m_Type(type), m_BehaviorID(beh ? beh->GetID() : 0),
+          m_IsGameplayWrite(isGameplayWrite ? TRUE : FALSE) {}
     virtual int Execute() = 0;
     virtual ~PhysicsCallback(){};
 
@@ -22,6 +25,7 @@ public:
     CKIpionManager *m_IpionManager;
     int m_Type;
     CK_ID m_BehaviorID;
+    CKBOOL m_IsGameplayWrite;
 };
 
 class PhysicsCallbackContainer

@@ -54,7 +54,8 @@ int PhysicsReset(const CKBehaviorContext &behcontext)
     if (!man)
         return CKBR_GENERICERROR;
 
-    man->Reset();
+    if (man->AreGameplayWritesEnabled())
+        man->Reset();
 
     beh->ActivateInput(0, FALSE);
     beh->ActivateOutput(0);

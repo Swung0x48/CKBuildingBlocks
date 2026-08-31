@@ -42,6 +42,15 @@ is compiled into the Win32 `physics_RT.dll` and `physics_RTStatic`.
   `step_fixed` is then the only supported scheduler: each tick is exactly
   `1/66` second, and a call is capped at eight ticks to bound catch-up work.
 - Leaving authority mode restores the original smoothed frame-delta path.
+- Client mirrors call `set_gameplay_writes_enabled(world, 0)` while an
+  authoritative room is running. This pauses behavior-graph force, impulse,
+  wake/reset, gravity/time-factor, constraint, buoyancy, collision-surface
+  deletion, and unphysicalize writes while leaving Physicalize available for
+  stable body binding. Deferred mutating callbacks remain pending and existing
+  continuous force controllers resume when the policy is restored.
+- The policy is enabled by default. It does not gate this C ABI: atomic state
+  reconcile, authority force/impulse commands, body creation/destruction, and
+  fixed stepping remain available to the client prediction/reconcile backend.
 
 ## Build identity
 

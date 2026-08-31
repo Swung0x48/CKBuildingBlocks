@@ -68,7 +68,8 @@ CKERROR CreatePhysicsHingeProto(CKBehaviorPrototype **pproto)
 class PhysicsHingeCallback : public PhysicsCallback
 {
 public:
-    PhysicsHingeCallback(CKIpionManager *man, CKBehavior *beh) : PhysicsCallback(man, beh, 2) {}
+    PhysicsHingeCallback(CKIpionManager *man, CKBehavior *beh)
+        : PhysicsCallback(man, beh, 2, TRUE) {}
 
     virtual int Execute()
     {
@@ -142,6 +143,15 @@ int PhysicsHinge(const CKBehaviorContext &behcontext)
     CKBehavior *beh = behcontext.Behavior;
     CKContext *context = behcontext.Context;
 
+    CKIpionManager *man = CKIpionManager::GetManager(context);
+    if (man && !man->AreGameplayWritesEnabled())
+    {
+        const int input = beh->IsInputActive(0) ? 0 : 1;
+        beh->ActivateInput(input, FALSE);
+        beh->ActivateOutput(input, TRUE);
+        return CKBR_OK;
+    }
+
     IVP_Constraint *constraint = NULL;
     beh->GetLocalParameterValue(0, &constraint);
 
@@ -158,7 +168,6 @@ int PhysicsHinge(const CKBehaviorContext &behcontext)
         if (!ent)
             return CKBR_OWNERERROR;
 
-        CKIpionManager *man = CKIpionManager::GetManager(context);
         if (!man || !man->GetEnvironment() || !man->m_PreSimulateCallbacks)
             return CKBR_GENERICERROR;
 

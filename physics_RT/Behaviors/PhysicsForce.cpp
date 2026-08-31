@@ -68,8 +68,10 @@ CKERROR CreatePhysicsForceProto(CKBehaviorPrototype **pproto)
 class PhysicsControllerForce : public IVP_Controller_Independent
 {
 public:
-    PhysicsControllerForce(IVP_Real_Object *obj, const IVP_U_Point &pos, const IVP_U_Point &force)
+    PhysicsControllerForce(CKIpionManager *manager, IVP_Real_Object *obj,
+                           const IVP_U_Point &pos, const IVP_U_Point &force)
     {
+        m_Manager = manager;
         m_Core = obj->get_core();
         m_Position = pos;
         m_Force = force;
@@ -95,6 +97,9 @@ public:
 
     void do_simulation_controller(IVP_Event_Sim *es, IVP_U_Vector<IVP_Core> *core_list)
     {
+        if (!m_Manager || !m_Manager->AreGameplayWritesEnabled())
+            return;
+
         if (core_list && core_list->len() != 0)
         {
             IVP_U_Matrix mat;
@@ -112,6 +117,7 @@ public:
 
     IVP_CONTROLLER_PRIORITY get_controller_priority() { return IVP_CP_ACTUATOR; };
 
+    CKIpionManager *m_Manager;
     IVP_Core *m_Core;
     IVP_U_Point m_Position;
     IVP_U_Point m_Force;
@@ -120,7 +126,8 @@ public:
 class PhysicsForceCallback : public PhysicsCallback
 {
 public:
-    PhysicsForceCallback(CKIpionManager *man, CKBehavior *beh) : PhysicsCallback(man, beh, 2) {}
+    PhysicsForceCallback(CKIpionManager *man, CKBehavior *beh)
+        : PhysicsCallback(man, beh, 2, TRUE) {}
 
     virtual int Execute()
     {
@@ -179,7 +186,8 @@ public:
             mat.vimult4(&p1, &pos);
         }
 
-        PhysicsControllerForce *controller = new PhysicsControllerForce(obj, pos, force);
+        PhysicsControllerForce *controller =
+            new PhysicsControllerForce(m_IpionManager, obj, pos, force);
         beh->SetLocalParameterValue(0, &controller);
 
         return 1;
@@ -215,6 +223,14 @@ int PhysicsForce(const CKBehaviorContext &behcontext)
     }
     else
     {
+        CKIpionManager *man = CKIpionManager::GetManager(context);
+        if (man && !man->AreGameplayWritesEnabled())
+        {
+            beh->ActivateInput(1, FALSE);
+            beh->ActivateOutput(1, TRUE);
+            return CKBR_OK;
+        }
+
         if (controller)
         {
             delete controller;

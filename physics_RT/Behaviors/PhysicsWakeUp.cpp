@@ -50,7 +50,8 @@ CKERROR CreatePhysicsWakeUpProto(CKBehaviorPrototype **pproto)
 class PhysicsWakeUpCallback : public PhysicsCallback
 {
 public:
-    PhysicsWakeUpCallback(CKIpionManager *man, CKBehavior *beh) : PhysicsCallback(man, beh, 2) {}
+    PhysicsWakeUpCallback(CKIpionManager *man, CKBehavior *beh)
+        : PhysicsCallback(man, beh, 2, TRUE) {}
 
     virtual int Execute()
     {

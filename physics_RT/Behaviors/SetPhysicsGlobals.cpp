@@ -56,15 +56,25 @@ int SetPhysicsGlobals(const CKBehaviorContext &behcontext)
     CKBehavior *beh = behcontext.Behavior;
     CKContext *context = behcontext.Context;
 
+    CKIpionManager *man = CKIpionManager::GetManager(context);
+    if (!man)
+        return CKBR_GENERICERROR;
+
+    if (!man->AreGameplayWritesEnabled())
+    {
+        if (beh->IsInputActive(0))
+            beh->ActivateInput(0, FALSE);
+        if (beh->IsInputActive(1))
+            beh->ActivateInput(1, FALSE);
+        beh->ActivateOutput(0, TRUE);
+        return CKBR_OK;
+    }
+
     VxVector gravity(0.0f, -9.81f, 0.0f);
     beh->GetInputParameterValue(0, &gravity);
 
     float physicsTimeFactor = 1.0f;
     beh->GetInputParameterValue(1, &physicsTimeFactor);
-
-    CKIpionManager *man = CKIpionManager::GetManager(context);
-    if (!man)
-        return CKBR_GENERICERROR;
 
     if (beh->IsInputActive(0))
     {

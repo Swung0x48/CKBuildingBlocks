@@ -242,6 +242,28 @@ void CollisionCachePolicyIsExplicitAndDeterministic()
           "Physicalize's runtime path must not infer collision geometry from the current render mesh");
 }
 
+void GameplayWritePolicyCoversBehaviorGraphMutationPaths()
+{
+    const std::string callbackSource = ReadSource("physics_RT/PhysicsCallback.cpp");
+    const std::string forceSource = ReadSource("physics_RT/Behaviors/PhysicsForce.cpp");
+    const std::string impulseSource = ReadSource("physics_RT/Behaviors/PhysicsImpulse.cpp");
+    const std::string resetSource = ReadSource("physics_RT/Behaviors/PhysicsReset.cpp");
+    const std::string globalsSource = ReadSource("physics_RT/Behaviors/SetPhysicsGlobals.cpp");
+    const std::string physicalizeSource = ReadSource("physics_RT/Behaviors/Physicalize.cpp");
+
+    Check(callbackSource.find("pc->m_IsGameplayWrite") != std::string::npos &&
+              callbackSource.find("!m_IpionManager->AreGameplayWritesEnabled()") != std::string::npos,
+          "Deferred gameplay-write callbacks must remain pending in client-mirror mode");
+    Check(forceSource.find("!m_Manager->AreGameplayWritesEnabled()") != std::string::npos,
+          "A previously installed continuous force controller must pause in client-mirror mode");
+    Check(impulseSource.find("!man->AreGameplayWritesEnabled()") != std::string::npos &&
+              resetSource.find("man->AreGameplayWritesEnabled()") != std::string::npos &&
+              globalsSource.find("!man->AreGameplayWritesEnabled()") != std::string::npos,
+          "Immediate impulse/reset/global behavior writes must honor client-mirror mode");
+    Check(physicalizeSource.find("if (!man->AreGameplayWritesEnabled())") != std::string::npos,
+          "Behavior-graph unphysicalize must not destroy an authoritative mirrored body");
+}
+
 void CheckPhysics(PhysicsRT_Result actual, PhysicsRT_Result expected, const char *message)
 {
     if (actual != expected)
@@ -305,6 +327,9 @@ void AuthorityAbiLayoutAndVersioningAreStable()
     Check(api->abi_version == PHYSICSRT_ABI_VERSION_1, "API function table version is wrong");
     Check(PhysicsRT_GetApi(0) == NULL && PhysicsRT_GetApi(2) == NULL,
           "Unsupported API versions must return null");
+    Check(api->set_gameplay_writes_enabled != NULL &&
+              api->get_gameplay_writes_enabled != NULL,
+          "Gameplay-write policy functions are missing from the v1 table");
 
     PhysicsRT_BuildInfo info;
     std::memset(&info, 0, sizeof(info));
@@ -513,6 +538,18 @@ void AuthorityHandlesStateAndFixedSteppingAreDeterministic()
     Check(api->reconcile_body_states(world, &desired, 1) == PHYSICSRT_OK,
           "Authority reconcile rejected a valid body state");
 
+    uint32_t gameplayWritesEnabled = 0;
+    Check(api->get_gameplay_writes_enabled(world, &gameplayWritesEnabled) == PHYSICSRT_OK &&
+              gameplayWritesEnabled == 1,
+          "Gameplay writes must be enabled by default");
+    Check(api->set_gameplay_writes_enabled(world, 2) ==
+              PHYSICSRT_ERROR_INVALID_ARGUMENT,
+          "Non-boolean gameplay-write policy values must be rejected");
+    Check(api->set_gameplay_writes_enabled(world, 0) == PHYSICSRT_OK &&
+              api->get_gameplay_writes_enabled(world, &gameplayWritesEnabled) == PHYSICSRT_OK &&
+              gameplayWritesEnabled == 0,
+          "Unable to enter client-mirror gameplay-write mode");
+
     PhysicsRT_ForceCommand force;
     std::memset(&force, 0, sizeof(force));
     force.struct_size = sizeof(force);
@@ -524,7 +561,7 @@ void AuthorityHandlesStateAndFixedSteppingAreDeterministic()
     PhysicsRT_ForceCommand impulse = force;
     impulse.vector_world[0] = 0.25f;
     Check(api->apply_impulses(world, &impulse, 1) == PHYSICSRT_OK,
-          "Unable to apply an authority impulse");
+          "Client-mirror policy incorrectly blocked a C ABI authority impulse");
 
     const double timeBefore = manager->GetSimulationTime().get_seconds();
     Check(api->step_fixed(world, 2) == PHYSICSRT_OK, "Unable to execute two fixed physics ticks");
@@ -538,7 +575,14 @@ void AuthorityHandlesStateAndFixedSteppingAreDeterministic()
     Check(api->get_body_states(world, &bodyA, 1, &roundTrip) == PHYSICSRT_OK,
           "Unable to read state after authority force");
     Check(roundTrip.linear_velocity_world[0] > 0.5f,
-          "Authority force was not integrated into linear velocity");
+          "Client-mirror policy incorrectly blocked C ABI prediction commands");
+
+    Check(api->reconcile_body_states(world, &desired, 1) == PHYSICSRT_OK,
+          "Client-mirror policy incorrectly blocked C ABI reconcile");
+    Check(api->set_gameplay_writes_enabled(world, 1) == PHYSICSRT_OK &&
+              api->get_gameplay_writes_enabled(world, &gameplayWritesEnabled) == PHYSICSRT_OK &&
+              gameplayWritesEnabled == 1,
+          "Unable to restore legacy gameplay writes after client-mirror mode");
 
     Check(api->set_authority_mode(world, 0) == PHYSICSRT_OK,
           "Unable to restore legacy physics mode");
@@ -605,6 +649,8 @@ int main()
 {
     const TestCase tests[] = {
         {"Collision cache policy is explicit and deterministic", &CollisionCachePolicyIsExplicitAndDeterministic},
+        {"Gameplay-write policy covers behavior graph mutation paths",
+         &GameplayWritePolicyCoversBehaviorGraphMutationPaths},
         {"Named surface reuse does not need geometry", &NamedSurfaceReuseDoesNotNeedGeometry},
         {"Unknown named surface does not guess current mesh", &UnknownNamedSurfaceDoesNotGuessCurrentMesh},
         {"Physics world matrix updates keep scale stable", &PhysicsWorldMatrixUpdatesKeepWorldScaleStable},

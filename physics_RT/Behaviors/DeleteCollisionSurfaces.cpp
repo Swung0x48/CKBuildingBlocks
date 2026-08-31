@@ -48,7 +48,8 @@ CKERROR CreateDeleteCollisionSurfacesProto(CKBehaviorPrototype **pproto)
 class DeleteCollisionSurfacesCallback : public PhysicsCallback
 {
 public:
-    DeleteCollisionSurfacesCallback(CKIpionManager *man, CKBehavior *beh) : PhysicsCallback(man, beh, 2) {}
+    DeleteCollisionSurfacesCallback(CKIpionManager *man, CKBehavior *beh)
+        : PhysicsCallback(man, beh, 2, TRUE) {}
 
     virtual int Execute()
     {

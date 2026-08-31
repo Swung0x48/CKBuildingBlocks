@@ -95,11 +95,22 @@ void PhysicsCallbackContainer::Process()
         for (int j = cbs.len() - 1; j >= 0; --j)
         {
             PhysicsCallback *pc = cbs.element_at(j);
-            if (!pc || !pc->GetBehavior() || pc->Execute() != 0)
+            if (!pc || !pc->GetBehavior())
             {
                 cbs.remove_at(j);
                 delete pc;
+                continue;
             }
+
+            if (pc->m_IsGameplayWrite && m_IpionManager &&
+                !m_IpionManager->AreGameplayWritesEnabled())
+                continue;
+
+            if (pc->Execute() == 0)
+                continue;
+
+            cbs.remove_at(j);
+            delete pc;
         }
 
         if (cbs.len() != 0)
@@ -117,6 +128,21 @@ void PhysicsCallbackContainer::Process(PhysicsCallback *pc)
     if (!pc->GetBehavior())
     {
         delete pc;
+        return;
+    }
+
+    if (pc->m_IsGameplayWrite && m_IpionManager &&
+        !m_IpionManager->AreGameplayWritesEnabled())
+    {
+        if (0 <= pc->m_Type && pc->m_Type < 3)
+        {
+            m_Callbacks[pc->m_Type].add(pc);
+            m_HasCallbacks = TRUE;
+        }
+        else
+        {
+            delete pc;
+        }
         return;
     }
 
