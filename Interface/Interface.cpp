@@ -38,10 +38,14 @@ CKERROR InitInstance(CKContext *context)
     pm->RegisterNewFlags(CKPGUID_FONTPROPERTIES, "", "Gradient=1,Shadow=2,Lighting=4,Disable Filter=8");
     pm->RegisterNewFlags(CKPGUID_TEXTPROPERTIES, "", "Screen Proportionnal=1,Background=2,Clip To Dimension=4,Resize Verticaly=8,Resize Horizontaly=16,WordWrap=32,Justified=64,Compiled=128,Multiple=256,Show Caret=512");
 
-#ifndef FONTMANAGER_NOSYSFONT
-    // System font
+    // Keep the serialized parameter schema available even when the headless
+    // runtime has no platform system-font backend. Strict CKFile loading must
+    // see the same GUIDs and behavior declarations as the client runtime.
     pm->RegisterNewEnum(CKPGUID_FONTWEIGHT, "Font Weight", "THIN=100,EXTRALIGHT=200,LIGHT=300,NORMAL=400,MEDIUM=500,DEMIBOLD=600,BOLD=700,EXTRABOLD=800,HEAVY=900");
     pm->RegisterNewEnum(CKPGUID_FONTRESOLUTION, "Font Resolution", "128x128=1,256x256=2,512x512=4,1024x1024=8");
+#ifdef FONTMANAGER_NOSYSFONT
+    pm->RegisterNewEnum(CKPGUID_FONTNAME, "Font Name", "Arial=0");
+#else
     pm->RegisterNewEnum(CKPGUID_FONTNAME, "Font Name", "");
 #endif
 
@@ -85,12 +89,9 @@ CKERROR ExitInstance(CKContext *context)
     pm->UnRegisterParameterType(CKPGUID_FLOW_ALIGNMENT);
     pm->UnRegisterParameterType(CKPGUID_FLOW_SUPPORT);
 
-#ifndef FONTMANAGER_NOSYSFONT
-    // System fonts
     pm->UnRegisterParameterType(CKPGUID_FONTWEIGHT);
     pm->UnRegisterParameterType(CKPGUID_FONTRESOLUTION);
     pm->UnRegisterParameterType(CKPGUID_FONTNAME);
-#endif
 
     pm->UnRegisterParameterType(CKPGUID_MOUSEPOINTERS);
 
@@ -169,10 +170,9 @@ void RegisterBehaviorDeclarations(XObjectDeclarationArray *reg)
     RegisterBehavior(reg, FillBehaviorCreateFontDecl);
     RegisterBehavior(reg, FillBehaviorDeleteFontDecl);
     RegisterBehavior(reg, FillBehaviorSetFontPropertiesDecl);
-#ifndef FONTMANAGER_NOSYSFONT
-    // System font blocks
+    // Register the serialized BB contract even in a windowless runtime. Its
+    // execution path reports the Error output without touching a system font.
     RegisterBehavior(reg, FillBehaviorCreateSystemFontDecl);
-#endif
     // Mouse Cursor System
     RegisterBehavior(reg, FillBehaviorMouseCursorSystemDecl);
 

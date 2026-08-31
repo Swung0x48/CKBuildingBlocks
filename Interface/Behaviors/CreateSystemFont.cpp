@@ -118,6 +118,14 @@ int CreateSystemFont(const CKBehaviorContext &behcontext)
 
     beh->ActivateInput(0, FALSE);
 
+#ifdef FONTMANAGER_NOSYSFONT
+    // Headless runtimes still register this serialized BB and its parameter
+    // GUIDs, but have no window-system font backend. Follow the normal Error
+    // branch without creating a texture or returning a behavior error.
+    beh->ActivateOutput(1);
+    return CKBR_OK;
+#endif
+
     // Get the behavior parameters
     CKFontManager *font = (CKFontManager *)behcontext.Context->GetManagerByGuid(FONT_MANAGER_GUID);
 
@@ -167,6 +175,13 @@ int CreateSystemFont(const CKBehaviorContext &behcontext)
 
 CKERROR CreateSystemFontCallback(const CKBehaviorContext &behcontext)
 {
+#ifdef FONTMANAGER_NOSYSFONT
+    // There is no mutable system-font enumeration in the headless runtime.
+    // The deterministic placeholder registered by Interface is sufficient for
+    // loading serialized parameters, so callbacks have no work to perform.
+    (void)behcontext;
+    return CKBR_OK;
+#else
     CKBehavior *beh = behcontext.Behavior;
 
     switch (behcontext.CallbackMessage)
@@ -310,4 +325,5 @@ CKERROR CreateSystemFontCallback(const CKBehaviorContext &behcontext)
     break;
     }
     return CKBR_OK;
+#endif
 }
