@@ -53,6 +53,7 @@ ckbb_add_module(physics_RT
                 AUTHORITY_API.md
                 PhysicsRTApi.cpp
                 PhysicsRTApi.h
+                PhysicsRTDllBoundary.h
                 PhysicsRTApiInternal.h
                 CKIpionManager.cpp
                 CKIpionManager.h
@@ -77,6 +78,43 @@ foreach (_physics_rt_target IN ITEMS physics_RT physics_RTStatic)
         )
     endif ()
 endforeach ()
+
+if (TARGET physics_RT AND MSVC)
+    # CK2's public classes carry DLL_EXPORT annotations.  A Building Block is
+    # a consumer of CK2, not an alternate CK2 ABI provider; suppressing that
+    # annotation here prevents inline CK helpers from adding /EXPORT linker
+    # directives to physics_RT.obj files.  PLUGIN_EXPORT and PHYSICSRT_PUBLIC
+    # remain independent and continue to export the three CK loader entries
+    # plus PhysicsRT_GetApi.
+    target_compile_options(physics_RT PRIVATE
+            "/FI${CMAKE_CURRENT_SOURCE_DIR}/PhysicsRTDllBoundary.h"
+    )
+
+    set(_physics_rt_dumpbin "${CMAKE_DUMPBIN}")
+    if (NOT _physics_rt_dumpbin)
+        get_filename_component(_physics_rt_msvc_tool_dir
+                "${CMAKE_CXX_COMPILER}" DIRECTORY)
+        unset(_physics_rt_dumpbin)
+        unset(_physics_rt_dumpbin CACHE)
+        find_program(_physics_rt_dumpbin
+                NAMES dumpbin.exe dumpbin
+                HINTS "${_physics_rt_msvc_tool_dir}"
+                NO_DEFAULT_PATH
+        )
+        if (NOT _physics_rt_dumpbin)
+            message(FATAL_ERROR "MSVC dumpbin is required to verify physics_RT exports")
+        endif ()
+    endif ()
+
+    add_custom_command(TARGET physics_RT POST_BUILD
+            COMMAND "${CMAKE_COMMAND}"
+                    "-DDUMPBIN=${_physics_rt_dumpbin}"
+                    "-DDLL=$<TARGET_FILE:physics_RT>"
+                    -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/verify_physics_rt_exports.cmake"
+            COMMENT "Verifying the physics_RT public DLL boundary"
+            VERBATIM
+    )
+endif ()
 
 if (CKBB_INSTALL)
     install(FILES PhysicsRTApi.h
@@ -114,4 +152,13 @@ if (CKBB_BUILD_TESTS AND BUILD_TESTING AND TARGET CK2_3DStatic)
     add_test(NAME physics_rt_regression_tests
             COMMAND $<TARGET_FILE:physics_rt_regression_tests>)
     set_tests_properties(physics_rt_regression_tests PROPERTIES TIMEOUT 60)
+endif ()
+
+if (MSVC AND TARGET physics_RT AND BUILD_TESTING)
+    add_test(NAME physics_rt_export_table
+            COMMAND "${CMAKE_COMMAND}"
+                    "-DDUMPBIN=${_physics_rt_dumpbin}"
+                    "-DDLL=$<TARGET_FILE:physics_RT>"
+                    -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/verify_physics_rt_exports.cmake"
+    )
 endif ()

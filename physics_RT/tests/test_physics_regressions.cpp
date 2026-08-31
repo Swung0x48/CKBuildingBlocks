@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "CKContext.h"
+#include "CKGlobals.h"
 #include "CKIpionManager.h"
 #include "PhysicsRTApi.h"
 #include "RCK3dObject.h"
@@ -505,6 +506,39 @@ void AuthorityHandlesStateAndFixedSteppingAreDeterministic()
           "Engine-side unphysicalize did not invalidate the body handle");
 }
 
+void CKShutdownDoesNotRepeatEnvironmentBehaviorReset()
+{
+    InitializeRenderClassesForTests();
+
+    Check(CKStartUp() == CK_OK, "CKStartUp failed during shutdown test");
+    CKContext *context = NULL;
+    Check(CKCreateContext(&context, NULL, 0, 0) == CK_OK && context != NULL,
+          "CKCreateContext failed during shutdown test");
+    CKIpionManager *manager = new CKIpionManager(context);
+    manager->CreateEnvironment();
+
+    const PhysicsRT_ApiV1 *api = PhysicsRT_GetApi(PHYSICSRT_ABI_VERSION_1);
+    Check(api != NULL, "PhysicsRT_GetApi(1) failed during shutdown test");
+
+    PhysicsRT_WorldHandle world = PHYSICSRT_INVALID_WORLD;
+    Check(api->acquire_world(context, &world) == PHYSICSRT_OK,
+          "Unable to acquire the shutdown-test physics world");
+    Check(api->set_authority_mode(world, 1) == PHYSICSRT_OK,
+          "Unable to enable authority mode for shutdown test");
+    Check(api->step_fixed(world, 1) == PHYSICSRT_OK,
+          "Unable to step the shutdown-test physics world");
+    // This is the production CK shutdown sequence: object clearing may destroy
+    // the IVP environment before OnCKEnd, then CKContext deletes managers in
+    // hash-table order.  Neither OnCKEnd nor the physics manager destructor may
+    // walk behaviors after CKObjectManager has potentially already been deleted.
+    Check(CKCloseContext(context) == CK_OK,
+          "CKCloseContext failed during shutdown test");
+    Check(api->validate_world(world) == PHYSICSRT_ERROR_INVALID_WORLD,
+          "CK shutdown left the authority world handle valid");
+
+    Check(CKShutdown() == CK_OK, "CKShutdown failed during shutdown test");
+}
+
 struct TestCase
 {
     const char *name;
@@ -524,6 +558,8 @@ int main()
         {"Authority world rejects cross-thread access", &AuthorityWorldRejectsCrossThreadAccess},
         {"Authority handles, state, and fixed stepping are deterministic",
          &AuthorityHandlesStateAndFixedSteppingAreDeterministic},
+        {"CK shutdown is idempotent after an authority step",
+         &CKShutdownDoesNotRepeatEnvironmentBehaviorReset},
     };
 
     int failed = 0;

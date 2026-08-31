@@ -690,7 +690,12 @@ void CKIpionManager::DestroyEnvironment(CKBOOL resetBehaviorHandles)
 {
     PhysicsRT_InternalInvalidateAllBodies(this);
 
-    if (resetBehaviorHandles)
+    // CK shutdown can tear the environment down while clearing objects, before
+    // OnCKEnd and manager deletion.  Later calls can happen after CKObjectManager
+    // was deleted, depending on manager hash order.  Only the first, real
+    // environment teardown may walk CK behaviors; all later calls must be
+    // context-agnostic.
+    if (resetBehaviorHandles && m_Environment)
         ResetPhysicsBehaviorHandles();
 
     m_CollisionFilterExclusivePair = NULL;
