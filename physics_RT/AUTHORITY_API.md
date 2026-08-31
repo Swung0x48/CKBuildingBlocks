@@ -56,5 +56,7 @@ is compiled into the Win32 `physics_RT.dll` and `physics_RTStatic`.
 
 `get_build_info` reports the source Git SHA (with `-dirty` for tracked local
 changes), the solver compatibility ID, ABI version, fixed step, and catch-up
-limit. A network authority session must compare both IDs before accepting
-physics input or snapshots.
+limit. The source SHA is diagnostic/release-manifest metadata only. Network
+authority compatibility is determined by the C ABI contract and solver
+compatibility ID; it does not require identical binaries or compare DLL file
+hashes.
