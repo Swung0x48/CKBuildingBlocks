@@ -284,6 +284,18 @@ void ApplyState(const ResolvedBody &resolved, const PhysicsRT_BodyState &state)
     IVP_Core *core = object->get_core();
     if (!core->physical_unmoveable)
     {
+        // IVP rebuilds the core's next-PSI state while transitioning between
+        // IVP_MT_NOT_SIM and an active simulation unit.  In particular,
+        // revive_simulation_core() calls calc_next_PSI_matrix_zero_speed(), so
+        // velocities written before ensure_in_simulation_now() are silently
+        // discarded.  Apply the requested movement state first, then install
+        // the authoritative velocities so create/reconcile is atomic from the
+        // caller's point of view.
+        if ((state.flags & PHYSICSRT_BODY_ACTIVE) != 0)
+            object->ensure_in_simulation_now();
+        else
+            object->disable_simulation();
+
         core->speed.set(state.linear_velocity_world[0],
                         state.linear_velocity_world[1],
                         state.linear_velocity_world[2]);
@@ -299,11 +311,6 @@ void ApplyState(const ResolvedBody &resolved, const PhysicsRT_BodyState &state)
         core->rot_speed.set(&angularCore);
         core->rot_speed_change.set(0.0f, 0.0f, 0.0f);
         core->reset_freeze_check_values();
-
-        if ((state.flags & PHYSICSRT_BODY_ACTIVE) != 0)
-            object->ensure_in_simulation_now();
-        else
-            object->disable_simulation();
     }
 
     object->enable_collision_detection(

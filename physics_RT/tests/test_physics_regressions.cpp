@@ -604,6 +604,102 @@ void AuthorityHandlesStateAndFixedSteppingAreDeterministic()
           "Engine-side unphysicalize did not invalidate the body handle");
 }
 
+void AuthorityBallsCollideWithEachOtherAndStaticTerrain()
+{
+    PhysicsFixture &fixture = GetPhysicsFixture();
+    CKIpionManager *manager = fixture.manager;
+    const PhysicsRT_ApiV1 *api = GetAuthorityApi();
+    const PhysicsRT_WorldHandle world = GetAuthorityWorld();
+
+    RCK3dObject ballEntityA(fixture.context, "AuthorityCollisionBallA");
+    RCK3dObject ballEntityB(fixture.context, "AuthorityCollisionBallB");
+    PhysicsRT_BallDesc ballA = MakeBallDesc(ballEntityA.GetID(), -3.0f);
+    PhysicsRT_BallDesc ballB = MakeBallDesc(ballEntityB.GetID(), 3.0f);
+    ballA.position[1] = 20.0f;
+    ballB.position[1] = 20.0f;
+    ballA.restitution = 1.0f;
+    ballB.restitution = 1.0f;
+    ballA.linear_velocity_world[0] = 12.0f;
+    ballB.linear_velocity_world[0] = -12.0f;
+    // An empty no-collision identifier is intentional. Retail player-ball
+    // archetypes often share a non-empty identifier, which makes IVP filter
+    // them out against each other. Authority clones must clear that identifier.
+    ballA.collision_group[0] = '\0';
+    ballB.collision_group[0] = '\0';
+
+    PhysicsRT_BodyHandle bodyA = PHYSICSRT_INVALID_BODY;
+    PhysicsRT_BodyHandle bodyB = PHYSICSRT_INVALID_BODY;
+    CheckPhysics(api->create_ball(world, &ballA, &bodyA), PHYSICSRT_OK,
+                 "Unable to create the first colliding authority ball");
+    CheckPhysics(api->create_ball(world, &ballB, &bodyB), PHYSICSRT_OK,
+                 "Unable to create the second colliding authority ball");
+    CheckPhysics(api->set_authority_mode(world, 1), PHYSICSRT_OK,
+                 "Unable to enable fixed stepping for the collision test");
+
+    const PhysicsRT_BodyHandle collisionHandles[2] = {bodyA, bodyB};
+    PhysicsRT_BodyState collisionStates[2];
+    for (int tick = 0; tick < 30; ++tick)
+        CheckPhysics(api->step_fixed(world, 1), PHYSICSRT_OK,
+                     "A fixed collision-test tick failed");
+
+    CheckPhysics(api->get_body_states(world, collisionHandles, 2,
+                                      collisionStates),
+                 PHYSICSRT_OK,
+                 "Unable to capture the two-ball collision result");
+    const bool ballsStayedOrdered =
+        collisionStates[0].position[0] < collisionStates[1].position[0];
+    const bool ballsRebounded =
+        collisionStates[0].linear_velocity_world[0] < -1.0f &&
+        collisionStates[1].linear_velocity_world[0] > 1.0f;
+
+    CheckPhysics(api->step_fixed(world, 1), PHYSICSRT_OK,
+                 "Unable to advance after the two-ball collision");
+
+    CheckPhysics(api->destroy_body(world, bodyA), PHYSICSRT_OK,
+                 "Unable to destroy the first collision-test ball");
+    CheckPhysics(api->destroy_body(world, bodyB), PHYSICSRT_OK,
+                 "Unable to destroy the second collision-test ball");
+
+    RCK3dObject terrainEntity(fixture.context, "AuthorityStaticTerrain");
+    IVP_Material_Simple terrainMaterial(0.8f, 0.0f);
+    Check(CreateNamedPolygon(*manager, *AsEntity(terrainEntity), NULL, 0,
+                             "Ball_Paper_Mesh", &terrainMaterial) == CK_OK,
+          "Unable to physicalize static authority terrain");
+
+    RCK3dObject fallingEntity(fixture.context, "AuthorityTerrainBall");
+    PhysicsRT_BallDesc falling = MakeBallDesc(fallingEntity.GetID(), 0.0f);
+    falling.position[1] = 3.0f;
+    falling.restitution = 0.0f;
+    falling.collision_group[0] = '\0';
+    PhysicsRT_BodyHandle fallingBody = PHYSICSRT_INVALID_BODY;
+    CheckPhysics(api->create_ball(world, &falling, &fallingBody), PHYSICSRT_OK,
+                 "Unable to create the terrain collision-test ball");
+    for (int tick = 0; tick < 180; ++tick)
+        CheckPhysics(api->step_fixed(world, 1), PHYSICSRT_OK,
+                     "A fixed terrain-test tick failed");
+
+    PhysicsRT_BodyState restingState;
+    CheckPhysics(api->get_body_states(world, &fallingBody, 1, &restingState),
+                 PHYSICSRT_OK,
+                 "Unable to capture the terrain collision result");
+    const bool terrainStoppedFall = restingState.position[1] > 0.5f &&
+        restingState.position[1] < 1.5f &&
+        std::fabs(restingState.linear_velocity_world[1]) < 1.0f;
+
+    CheckPhysics(api->destroy_body(world, fallingBody), PHYSICSRT_OK,
+                 "Unable to destroy the terrain collision-test ball");
+    DeletePhysicsObject(*manager, *AsEntity(terrainEntity));
+    CheckPhysics(api->set_authority_mode(world, 0), PHYSICSRT_OK,
+                 "Unable to restore legacy stepping after collision tests");
+
+    Check(ballsStayedOrdered,
+          "Authority balls crossed through each other instead of colliding");
+    Check(ballsRebounded,
+          "Authority balls did not exchange direction after collision");
+    Check(terrainStoppedFall,
+          "Authority ball did not converge on the static terrain surface");
+}
+
 void CKShutdownDoesNotRepeatEnvironmentBehaviorReset()
 {
     InitializeRenderClassesForTests();
@@ -658,6 +754,8 @@ int main()
         {"Authority world rejects cross-thread access", &AuthorityWorldRejectsCrossThreadAccess},
         {"Authority handles, state, and fixed stepping are deterministic",
          &AuthorityHandlesStateAndFixedSteppingAreDeterministic},
+        {"Authority balls collide with each other and static terrain",
+         &AuthorityBallsCollideWithEachOtherAndStaticTerrain},
         {"CK shutdown is idempotent after an authority step",
          &CKShutdownDoesNotRepeatEnvironmentBehaviorReset},
     };
