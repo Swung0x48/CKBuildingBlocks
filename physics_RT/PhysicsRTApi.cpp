@@ -400,6 +400,11 @@ PhysicsRT_Result PHYSICSRT_CALL AcquireWorldImpl(void *ckContext, PhysicsRT_Worl
     if (!ckContext || !outWorld)
         return PHYSICSRT_ERROR_INVALID_ARGUMENT;
 
+    CKContext *context = static_cast<CKContext *>(ckContext);
+    CKIpionManager *manager = CKIpionManager::GetManager(context);
+    if (!manager)
+        return PHYSICSRT_ERROR_NOT_READY;
+
     Registry &registry = GetRegistry();
     std::lock_guard<std::mutex> lock(registry.mutex);
     for (std::map<PhysicsRT_WorldHandle, WorldRecord>::const_iterator it = registry.worlds.begin();
@@ -413,7 +418,16 @@ PhysicsRT_Result PHYSICSRT_CALL AcquireWorldImpl(void *ckContext, PhysicsRT_Worl
             return PHYSICSRT_OK;
         }
     }
-    return PHYSICSRT_ERROR_INVALID_WORLD;
+
+    const PhysicsRT_WorldHandle handle = AllocateHandle(registry.nextWorld);
+    WorldRecord record;
+    record.manager = manager;
+    record.context = context;
+    record.ownerThread = std::this_thread::get_id();
+    registry.worlds.insert(std::make_pair(handle, record));
+    registry.worldsByManager[manager] = handle;
+    *outWorld = handle;
+    return PHYSICSRT_OK;
 }
 
 PhysicsRT_Result PHYSICSRT_CALL ValidateWorldImpl(PhysicsRT_WorldHandle world)
@@ -615,14 +629,24 @@ PhysicsRT_Result PHYSICSRT_CALL FindBodyByCkIdImpl(PhysicsRT_WorldHandle world,
 
     Registry &registry = GetRegistry();
     std::lock_guard<std::mutex> lock(registry.mutex);
-    std::map<PhysicsRT_WorldHandle, WorldRecord>::const_iterator worldIt = registry.worlds.find(world);
+    std::map<PhysicsRT_WorldHandle, WorldRecord>::iterator worldIt = registry.worlds.find(world);
     if (worldIt == registry.worlds.end())
         return PHYSICSRT_ERROR_INVALID_WORLD;
     if (worldIt->second.ownerThread != std::this_thread::get_id())
         return PHYSICSRT_ERROR_WRONG_THREAD;
     std::map<int32_t, PhysicsRT_BodyHandle>::const_iterator bodyIt = worldIt->second.bodiesByCkId.find(ckId);
     if (bodyIt == worldIt->second.bodiesByCkId.end())
-        return PHYSICSRT_ERROR_INVALID_BODY;
+    {
+        PhysicsObject *physicsObject =
+            worldIt->second.manager->GetPhysicsObjectById((CK_ID)ckId);
+        if (!physicsObject || !physicsObject->m_RealObject)
+            return PHYSICSRT_ERROR_INVALID_BODY;
+        const PhysicsRT_BodyHandle handle = AllocateHandle(registry.nextBody);
+        worldIt->second.bodiesByCkId[ckId] = handle;
+        worldIt->second.ckIdByBody[handle] = ckId;
+        *outBody = handle;
+        return PHYSICSRT_OK;
+    }
     *outBody = bodyIt->second;
     return PHYSICSRT_OK;
 }

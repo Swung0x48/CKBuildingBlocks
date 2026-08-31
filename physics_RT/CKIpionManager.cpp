@@ -203,8 +203,11 @@ CKIpionManager::CKIpionManager(CKContext *context)
     m_CollisionSurfaces = NULL;
     m_CollDetectionIDAttribType = -1;
 
-    if (managerRegistration == CK_OK)
-        PhysicsRT_InternalRegisterWorld(this, context);
+    // The public authority registry is attached lazily by acquire_world().
+    // Initializing C++ synchronization/storage from a CK manager constructor
+    // changes the retail plugin-startup order and can make legacy CK2 expose
+    // an incomplete manager roster to BML.  No authority caller can access a
+    // world before it explicitly acquires the already-registered manager.
 }
 
 CKIpionManager::~CKIpionManager()
