@@ -123,6 +123,7 @@ public:
 
     int GetPhysicsObjectCount() const;
     PhysicsObject *GetPhysicsObject(CK3dEntity *entity, CKBOOL logging = FALSE);
+    PhysicsObject *GetPhysicsObjectById(CK_ID entityId);
     void RemovePhysicsObject(CK3dEntity *entity);
 
     int CreatePhysicsObjectOnParameters(CK3dEntity *target, int convexCount, CKMesh **convexes,
@@ -166,6 +167,11 @@ public:
     void DestroyEnvironment(CKBOOL resetBehaviorHandles = TRUE);
 
     void Simulate(float deltaTime);
+
+    void SetAuthorityMode(CKBOOL enabled);
+    CKBOOL IsAuthorityMode() const { return m_AuthorityMode; }
+    CKBOOL StepAuthoritySimulation();
+    float GetForceDeltaSeconds() const;
 
     void ResetSimulationClock();
 
@@ -242,6 +248,7 @@ public:
     float m_DeltaTime;
     float m_PhysicsDeltaTime;
     float m_PhysicsTimeFactor;
+    CKBOOL m_AuthorityMode;
     int m_CallbackProcessingDepth;
     CKBOOL m_ResetRequested;
     int m_HasPhysicsCalls;

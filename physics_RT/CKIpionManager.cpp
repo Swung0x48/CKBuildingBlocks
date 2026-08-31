@@ -1,5 +1,8 @@
 #include "CKIpionManager.h"
 
+#include "PhysicsRTApi.h"
+#include "PhysicsRTApiInternal.h"
+
 #include "CKTimeManager.h"
 #include "CKMesh.h"
 #include "CK3dEntity.h"
@@ -187,18 +190,25 @@ CKIpionManager::CKIpionManager(CKContext *context)
     m_TimeManager = NULL;
     m_DeltaTime = 0.0f;
     m_PhysicsDeltaTime = 0.0f;
+    m_PhysicsTimeFactor = 0.001f;
+    m_AuthorityMode = FALSE;
     m_CallbackProcessingDepth = 0;
     m_ResetRequested = FALSE;
 
-    if (context->RegisterNewManager(this) == CKERR_MANAGERALREADYEXISTS)
+    const CKERROR managerRegistration = context->RegisterNewManager(this);
+    if (managerRegistration == CKERR_MANAGERALREADYEXISTS)
         context->OutputToConsole("Manager already exists", TRUE);
 
     m_CollisionSurfaces = NULL;
     m_CollDetectionIDAttribType = -1;
+
+    if (managerRegistration == CK_OK)
+        PhysicsRT_InternalRegisterWorld(this, context);
 }
 
 CKIpionManager::~CKIpionManager()
 {
+    PhysicsRT_InternalUnregisterWorld(this);
     DestroyEnvironment();
     DeleteCollisionSurfaces();
     ClearLiquidSurfaces();
@@ -267,7 +277,11 @@ CKERROR CKIpionManager::PostClearAll()
 
 CKERROR CKIpionManager::PostProcess()
 {
-    Simulate(m_TimeManager->GetLastDeltaTime());
+    // Authority users own the fixed-tick schedule through PhysicsRT_ApiV1.
+    // Keeping the legacy manager callback disabled prevents an accidental
+    // variable frame step or a second step in the same game frame.
+    if (!m_AuthorityMode)
+        Simulate(m_TimeManager->GetLastDeltaTime());
 
     return CK_OK;
 }
@@ -394,12 +408,19 @@ PhysicsObject *CKIpionManager::GetPhysicsObject(CK3dEntity *entity, CKBOOL loggi
     return obj;
 }
 
+PhysicsObject *CKIpionManager::GetPhysicsObjectById(CK_ID entityId)
+{
+    PhysicsObjectTable::Iterator it = m_PhysicsObjects.Find(entityId);
+    return it == m_PhysicsObjects.End() ? NULL : &*it;
+}
+
 void CKIpionManager::RemovePhysicsObject(CK3dEntity *entity)
 {
     if (!entity)
         return;
 
     const CK_ID owner = entity->GetID();
+    PhysicsRT_InternalInvalidateBody(this, (int32_t)owner);
     m_PhysicsObjects.Remove(owner);
     DeletePrivateCollisionSurface(owner);
     DeleteMaterial(owner);
@@ -520,6 +541,7 @@ int CKIpionManager::CreatePhysicsObjectOnParameters(CK3dEntity *target, int conv
     PhysicsObject po;
     po.m_RealObject = obj;
     m_PhysicsObjects.Insert(target->GetID(), po);
+    PhysicsRT_InternalRegisterBody(this, (int32_t)target->GetID());
 
     return CK_OK;
 }
@@ -644,6 +666,9 @@ void CKIpionManager::CreateEnvironment()
     IVP_Environment_Manager *envManager = IVP_Environment_Manager::get_environment_manager();
     m_Environment = envManager->create_environment(&appEnv, "NeMo", 0x7EFAD621);
 
+    if (m_AuthorityMode)
+        m_Environment->set_delta_PSI_time(1.0 / (double)PHYSICSRT_FIXED_TICK_HZ);
+
     IVP_U_Point gravity = IVP_U_Point(0.0, -9.81, 0.0);
     m_Environment->set_gravity(&gravity);
 
@@ -663,6 +688,8 @@ void CKIpionManager::CreateEnvironment()
 
 void CKIpionManager::DestroyEnvironment(CKBOOL resetBehaviorHandles)
 {
+    PhysicsRT_InternalInvalidateAllBodies(this);
+
     if (resetBehaviorHandles)
         ResetPhysicsBehaviorHandles();
 
@@ -761,6 +788,31 @@ void CKIpionManager::Simulate(float deltaTime)
     }
 }
 
+void CKIpionManager::SetAuthorityMode(CKBOOL enabled)
+{
+    m_AuthorityMode = enabled ? TRUE : FALSE;
+    m_DeltaTime = 0.0f;
+    m_PhysicsDeltaTime = m_AuthorityMode ?
+        (1.0f / (float)PHYSICSRT_FIXED_TICK_HZ) : 0.0f;
+
+    if (m_Environment && m_AuthorityMode)
+        m_Environment->set_delta_PSI_time(1.0 / (double)PHYSICSRT_FIXED_TICK_HZ);
+}
+
+CKBOOL CKIpionManager::StepAuthoritySimulation()
+{
+    if (!m_AuthorityMode || !m_Environment)
+        return FALSE;
+
+    Simulate(1000.0f / (float)PHYSICSRT_FIXED_TICK_HZ);
+    return TRUE;
+}
+
+float CKIpionManager::GetForceDeltaSeconds() const
+{
+    return m_AuthorityMode ? (1.0f / (float)PHYSICSRT_FIXED_TICK_HZ) : m_PhysicsDeltaTime;
+}
+
 void CKIpionManager::ResetSimulationClock()
 {
     m_Environment->reset_time();
@@ -780,11 +832,22 @@ float CKIpionManager::GetSimulationTimeStep() const
 
 void CKIpionManager::SetSimulationTimeStep(float step)
 {
+    if (m_AuthorityMode)
+        step = 1.0f / (float)PHYSICSRT_FIXED_TICK_HZ;
     m_Environment->set_delta_PSI_time(step);
 }
 
 void CKIpionManager::SetDeltaTime(float delta)
 {
+    if (m_AuthorityMode)
+    {
+        // Server/client authority stepping is exactly one IVP tick.  In
+        // particular, do not run the legacy 3:1 frame-delta smoothing here.
+        m_DeltaTime = 1000.0f / (float)PHYSICSRT_FIXED_TICK_HZ;
+        m_PhysicsDeltaTime = 1.0f / (float)PHYSICSRT_FIXED_TICK_HZ;
+        return;
+    }
+
     m_DeltaTime = (m_DeltaTime * 3.0f + delta) / 4;
     m_PhysicsDeltaTime = m_DeltaTime * m_PhysicsTimeFactor;
 }
