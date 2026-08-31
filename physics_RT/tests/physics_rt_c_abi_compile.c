@@ -12,5 +12,6 @@ typedef char PhysicsRT_CAssertPoseOffset[(offsetof(PhysicsRT_BodyState, position
 int PhysicsRT_CAbiCompileProbe(void)
 {
     const PhysicsRT_ApiV1 *api = PhysicsRT_GetApi(PHYSICSRT_ABI_VERSION_1);
-    return api != NULL && api->abi_version == PHYSICSRT_ABI_VERSION_1;
+    return api != NULL && api->abi_version == PHYSICSRT_ABI_VERSION_1 &&
+           api->capture_ball_desc != NULL;
 }

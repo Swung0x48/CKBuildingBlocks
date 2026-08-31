@@ -347,7 +347,15 @@ void AuthorityHandlesStateAndFixedSteppingAreDeterministic()
 
     RCK3dObject entityA(fixture.context, "AuthorityBallA");
     RCK3dObject entityB(fixture.context, "AuthorityBallB");
-    const PhysicsRT_BallDesc descA = MakeBallDesc(entityA.GetID(), -10.0f);
+    RCK3dObject entityClone(fixture.context, "AuthorityBallClone");
+    PhysicsRT_BallDesc descA = MakeBallDesc(entityA.GetID(), -10.0f);
+    descA.radius = 1.25f;
+    descA.mass = 2.5f;
+    descA.friction = 0.65f;
+    descA.restitution = 0.35f;
+    descA.linear_damping = 0.12f;
+    descA.angular_damping = 0.23f;
+    std::strcpy(descA.collision_group, "Player");
     const PhysicsRT_BallDesc descB = MakeBallDesc(entityB.GetID(), 10.0f);
     PhysicsRT_BodyHandle bodyA = PHYSICSRT_INVALID_BODY;
     PhysicsRT_BodyHandle bodyB = PHYSICSRT_INVALID_BODY;
@@ -364,10 +372,54 @@ void AuthorityHandlesStateAndFixedSteppingAreDeterministic()
     Check(api->validate_body(world, bodyA) == PHYSICSRT_OK,
           "A newly created authority body is invalid");
 
+    PhysicsRT_BallDesc captured;
+    std::memset(&captured, 0, sizeof(captured));
+    captured.struct_size = sizeof(captured);
+    Check(api->capture_ball_desc(world, bodyA, &captured) == PHYSICSRT_OK,
+          "Unable to capture an existing ball archetype");
+    Check(captured.struct_size == sizeof(captured) && captured.ck_id == entityA.GetID(),
+          "Captured ball descriptor identity/layout is wrong");
+    Check(NearlyEqual(captured.radius, descA.radius) &&
+              NearlyEqual(captured.mass, descA.mass) &&
+              NearlyEqual(captured.friction, descA.friction) &&
+              NearlyEqual(captured.restitution, descA.restitution) &&
+              NearlyEqual(captured.linear_damping, descA.linear_damping) &&
+              NearlyEqual(captured.angular_damping, descA.angular_damping) &&
+              std::strcmp(captured.collision_group, descA.collision_group) == 0,
+          "Captured ball descriptor changed physical archetype parameters");
+    Check((captured.flags & PHYSICSRT_BALL_START_ACTIVE) != 0 &&
+              (captured.flags & PHYSICSRT_BALL_COLLISION_ENABLED) != 0 &&
+              NearlyEqual(captured.position[0], descA.position[0]),
+          "Captured ball descriptor lost current state");
+    PhysicsRT_BallDesc cloneDesc = captured;
+    cloneDesc.ck_id = entityClone.GetID();
+    cloneDesc.position[0] = 30.0f;
+    cloneDesc.position[1] = 20.0f;
+    std::memset(cloneDesc.linear_velocity_world, 0,
+                sizeof(cloneDesc.linear_velocity_world));
+    std::memset(cloneDesc.angular_velocity_world, 0,
+                sizeof(cloneDesc.angular_velocity_world));
+    PhysicsRT_BodyHandle cloneBody = PHYSICSRT_INVALID_BODY;
+    Check(api->create_ball(world, &cloneDesc, &cloneBody) == PHYSICSRT_OK &&
+              cloneBody != PHYSICSRT_INVALID_BODY,
+          "Unable to create a ball from the captured archetype");
+    PhysicsRT_BallDesc cloneRoundTrip;
+    std::memset(&cloneRoundTrip, 0, sizeof(cloneRoundTrip));
+    cloneRoundTrip.struct_size = sizeof(cloneRoundTrip);
+    Check(api->capture_ball_desc(world, cloneBody, &cloneRoundTrip) == PHYSICSRT_OK &&
+              NearlyEqual(cloneRoundTrip.radius, descA.radius) &&
+              NearlyEqual(cloneRoundTrip.mass, descA.mass) &&
+              NearlyEqual(cloneRoundTrip.position[0], cloneDesc.position[0]),
+          "Captured ball archetype did not survive clone/create round trip");
+    captured.struct_size = sizeof(captured) - 1;
+    Check(api->capture_ball_desc(world, bodyA, &captured) ==
+              PHYSICSRT_ERROR_INVALID_ARGUMENT,
+          "Undersized ball archetype output must be rejected");
+
     uint32_t bodyCount = 0;
     Check(api->enumerate_bodies(world, NULL, 0, &bodyCount) == PHYSICSRT_ERROR_BUFFER_TOO_SMALL,
           "Enumeration size query did not report a required buffer");
-    Check(bodyCount >= 2, "Authority enumeration omitted newly created bodies");
+    Check(bodyCount >= 3, "Authority enumeration omitted newly created bodies");
     std::vector<PhysicsRT_BodyRef> refs(bodyCount);
     uint32_t capacity = bodyCount;
     Check(api->enumerate_bodies(world, &refs[0], capacity, &bodyCount) == PHYSICSRT_OK,
@@ -466,7 +518,7 @@ void AuthorityHandlesStateAndFixedSteppingAreDeterministic()
     force.struct_size = sizeof(force);
     force.flags = PHYSICSRT_FORCE_AT_CENTER;
     force.body = bodyA;
-    force.vector_world[0] = 66.0f;
+    force.vector_world[0] = 165.0f;
     Check(api->apply_forces(world, &force, 1) == PHYSICSRT_OK,
           "Unable to apply an authority force");
     PhysicsRT_ForceCommand impulse = force;
@@ -498,6 +550,8 @@ void AuthorityHandlesStateAndFixedSteppingAreDeterministic()
           "Unable to destroy the first authority body");
     Check(api->validate_body(world, bodyA) == PHYSICSRT_ERROR_INVALID_BODY,
           "Destroyed authority handle remained valid");
+    Check(api->destroy_body(world, cloneBody) == PHYSICSRT_OK,
+          "Unable to destroy the cloned authority body");
     PhysicsObject *directlyDeleted = manager->GetPhysicsObjectById(entityB.GetID());
     Check(directlyDeleted && directlyDeleted->m_RealObject,
           "Second authority body disappeared before lifecycle test");

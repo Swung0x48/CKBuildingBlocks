@@ -179,6 +179,9 @@ typedef PhysicsRT_Result(PHYSICSRT_CALL *PhysicsRT_SetBodyStatesFn)(PhysicsRT_Wo
 typedef PhysicsRT_Result(PHYSICSRT_CALL *PhysicsRT_ApplyCommandsFn)(PhysicsRT_WorldHandle world,
                                                                    const PhysicsRT_ForceCommand *commands,
                                                                    uint32_t command_count);
+typedef PhysicsRT_Result(PHYSICSRT_CALL *PhysicsRT_CaptureBallDescFn)(PhysicsRT_WorldHandle world,
+                                                                     PhysicsRT_BodyHandle body,
+                                                                     PhysicsRT_BallDesc *out_desc);
 
 typedef struct PhysicsRT_ApiV1
 {
@@ -200,6 +203,13 @@ typedef struct PhysicsRT_ApiV1
     PhysicsRT_SetBodyStatesFn reconcile_body_states;
     PhysicsRT_ApplyCommandsFn apply_forces;
     PhysicsRT_ApplyCommandsFn apply_impulses;
+    /*
+     * Captures a reusable archetype and current state from an existing native
+     * IVP ball. The caller replaces ck_id and, when desired, pose/velocities
+     * before passing the descriptor to create_ball. Polygon/multi-ball and
+     * static bodies are rejected rather than approximated.
+     */
+    PhysicsRT_CaptureBallDescFn capture_ball_desc;
 } PhysicsRT_ApiV1;
 
 /* Returns NULL for every unsupported ABI version. */

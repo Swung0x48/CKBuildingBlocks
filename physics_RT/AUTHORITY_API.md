@@ -18,6 +18,12 @@ is compiled into the Win32 `physics_RT.dll` and `physics_RTStatic`.
 - `create_ball` physicalizes an existing `CK3dEntity` selected by CK ID; it
   creates no render object. An empty collision group allows player balls to
   collide with each other.
+- `capture_ball_desc` reads a native `IVP_Ball` into the same pure-C
+  `PhysicsRT_BallDesc` accepted by `create_ball`, including exact radius, mass,
+  material, damping, collision group and current rigid-body state. Replace
+  `ck_id` (and normally pose/velocities) to instantiate another ball from the
+  loaded map's real archetype. Static, polygon and multi-ball bodies are
+  rejected instead of being approximated.
 - `enumerate_bodies` is sorted by CK ID. Call it once with a null output buffer
   to obtain the required count, then supply that many `PhysicsRT_BodyRef`
   entries.

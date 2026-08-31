@@ -6,6 +6,7 @@
 #include "CK3dEntity.h"
 #include "CKContext.h"
 #include "CKObject.h"
+#include "ivp_ball.hxx"
 #include "ivp_material.hxx"
 
 #include <cmath>
@@ -607,6 +608,80 @@ PhysicsRT_Result PHYSICSRT_CALL DestroyBodyImpl(PhysicsRT_WorldHandle world,
     return PHYSICSRT_OK;
 }
 
+PhysicsRT_Result PHYSICSRT_CALL CaptureBallDescImpl(PhysicsRT_WorldHandle world,
+                                                    PhysicsRT_BodyHandle body,
+                                                    PhysicsRT_BallDesc *outDesc)
+{
+    if (!outDesc || outDesc->struct_size < sizeof(PhysicsRT_BallDesc))
+        return PHYSICSRT_ERROR_INVALID_ARGUMENT;
+
+    ResolvedBody resolved;
+    PhysicsRT_Result result = ResolveBody(world, body, &resolved);
+    if (result != PHYSICSRT_OK)
+        return result;
+
+    IVP_Real_Object *object = resolved.physicsObject->m_RealObject;
+    IVP_Ball *ball = dynamic_cast<IVP_Ball *>(object);
+    if (!ball)
+        return PHYSICSRT_ERROR_INVALID_STATE;
+    IVP_Core *core = object->get_core();
+    if (!core)
+        return PHYSICSRT_ERROR_INVALID_STATE;
+    if (core->physical_unmoveable)
+        return PHYSICSRT_ERROR_STATIC_BODY;
+    IVP_Material *material = object->l_default_material;
+    if (!material)
+        return PHYSICSRT_ERROR_INVALID_STATE;
+
+    const float radius = ball->get_radius();
+    const float mass = core->get_mass();
+    const float friction = (float)material->get_friction_factor();
+    const float restitution = (float)material->get_elasticity();
+    const float linearDamping = core->speed_damp_factor;
+    const float angularDamping = core->rot_speed_damp_factor.k[0];
+    if (!IsFinite(radius) || radius <= 0.0f || !IsFinite(mass) || mass <= 0.0f ||
+        !IsFinite(friction) || friction < 0.0f || !IsFinite(restitution) ||
+        restitution < 0.0f || restitution > 1.0f || !IsFinite(linearDamping) ||
+        linearDamping < 0.0f || !IsFinite(angularDamping) || angularDamping < 0.0f ||
+        !IsFinite(core->rot_speed_damp_factor.k[1]) ||
+        !IsFinite(core->rot_speed_damp_factor.k[2]) ||
+        std::fabs(core->rot_speed_damp_factor.k[1] - angularDamping) > 1.0e-6f ||
+        std::fabs(core->rot_speed_damp_factor.k[2] - angularDamping) > 1.0e-6f)
+        return PHYSICSRT_ERROR_INVALID_STATE;
+
+    PhysicsRT_BodyState state;
+    result = ReadBodyState(resolved, &state);
+    if (result != PHYSICSRT_OK)
+        return result;
+
+    PhysicsRT_BallDesc desc;
+    std::memset(&desc, 0, sizeof(desc));
+    desc.struct_size = sizeof(desc);
+    desc.flags = (state.flags & PHYSICSRT_BODY_ACTIVE) != 0 ?
+        PHYSICSRT_BALL_START_ACTIVE : 0;
+    if ((state.flags & PHYSICSRT_BODY_COLLISION_ENABLED) != 0)
+        desc.flags |= PHYSICSRT_BALL_COLLISION_ENABLED;
+    desc.ck_id = resolved.ckId;
+    desc.radius = radius;
+    desc.mass = mass;
+    desc.friction = friction;
+    desc.restitution = restitution;
+    desc.linear_damping = linearDamping;
+    desc.angular_damping = angularDamping;
+    std::memcpy(desc.position, state.position, sizeof(desc.position));
+    std::memcpy(desc.orientation_xyzw, state.orientation_xyzw,
+                sizeof(desc.orientation_xyzw));
+    std::memcpy(desc.linear_velocity_world, state.linear_velocity_world,
+                sizeof(desc.linear_velocity_world));
+    std::memcpy(desc.angular_velocity_world, state.angular_velocity_world,
+                sizeof(desc.angular_velocity_world));
+    std::memcpy(desc.collision_group, object->nocoll_group_ident,
+                PHYSICSRT_COLLISION_GROUP_CAPACITY - 1);
+    desc.collision_group[PHYSICSRT_COLLISION_GROUP_CAPACITY - 1] = '\0';
+    *outDesc = desc;
+    return PHYSICSRT_OK;
+}
+
 PhysicsRT_Result PHYSICSRT_CALL GetBodyStatesImpl(PhysicsRT_WorldHandle world,
                                                   const PhysicsRT_BodyHandle *bodies,
                                                   uint32_t bodyCount,
@@ -745,6 +820,7 @@ const PhysicsRT_ApiV1 kApiV1 = {
     &ReconcileBodyStatesImpl,
     &ApplyForcesImpl,
     &ApplyImpulsesImpl,
+    &CaptureBallDescImpl,
 };
 
 } // namespace
