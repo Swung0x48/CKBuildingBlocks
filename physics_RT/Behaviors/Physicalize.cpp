@@ -105,6 +105,11 @@ int Physicalize(const CKBehaviorContext &behcontext)
         PhysicsObject *po = man->GetPhysicsObject(ent);
         if (po)
         {
+            // BMMO (engine change #6): the body survived a guarded
+            // Unphysicalize while the script moved the entity back to its
+            // initial pose; the entity follows the body again.
+            if (man->m_KeepLevelBodies && po->m_RealObject)
+                CKIpionManager::UpdateObjectWorldMatrix(po->m_RealObject);
             beh->ActivateOutput(0, TRUE);
             return CKBR_OK;
         }
@@ -212,6 +217,14 @@ int Physicalize(const CKBehaviorContext &behcontext)
     {
         ++man->m_DePhysicalizeCalls;
         beh->ActivateInput(1, FALSE);
+
+        // BMMO (engine change #6): a networked physics session keeps the
+        // level bodies; only the player's ball may be unphysicalized.
+        if (man->m_KeepLevelBodies && ent->GetID() != man->m_KeepLevelBodiesExcept)
+        {
+            beh->ActivateOutput(1, TRUE);
+            return CKBR_OK;
+        }
 
         PhysicsObject *po = man->GetPhysicsObject(ent);
         if (po)

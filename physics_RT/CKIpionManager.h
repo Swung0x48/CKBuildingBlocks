@@ -252,6 +252,14 @@ public:
     float field_FC;
     float field_104;
     PhysicsObjectTable m_PhysicsObjects;
+
+    // BMMO (engine change #6): while non-zero, the Unphysicalize input of
+    // the Physicalize block keeps every body except the entity with the id
+    // m_KeepLevelBodiesExcept (the player's ball).  A networked physics
+    // session sets it so the retail sector reset after a death does not
+    // delete and recreate the shared mechanisms the server keeps.
+    int m_KeepLevelBodies;
+    CK_ID m_KeepLevelBodiesExcept;
 };
 
 #endif // PHYSICS_RT_IPIONMANAGER_H

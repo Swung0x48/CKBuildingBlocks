@@ -172,6 +172,8 @@ CKIpionManager::CKIpionManager(CKContext *context)
     m_HasPhysicsCalls = 0;
     m_PhysicalizeCalls = 0;
     m_DePhysicalizeCalls = 0;
+    m_KeepLevelBodies = 0;
+    m_KeepLevelBodiesExcept = 0;
     m_HasPhysicsTime = 0.0f;
     m_DePhysicalizeTime = 0.0f;
     field_FC = 0.0f;

@@ -71,6 +71,18 @@ int SetPhysicsGlobals(const CKBehaviorContext &behcontext)
         beh->ActivateInput(0, FALSE);
         if (man->GetEnvironment())
         {
+            // BMMO diagnostics: which script changes the time factor
+            static const bool trace = getenv("BMMO_TRACE_TIMEFACTOR") != NULL;
+            if (trace)
+            {
+                CKBehavior *root = beh;
+                while (root && root->GetParent())
+                    root = root->GetParent();
+                CKBeObject *owner = beh->GetOwner();
+                printf("[bmmo] time factor %g by %s (script %s, owner %s)\n", physicsTimeFactor,
+                       beh->GetName() ? beh->GetName() : "?", root && root->GetName() ? root->GetName() : "?",
+                       owner && owner->GetName() ? owner->GetName() : "?");
+            }
             man->SetTimeFactor(physicsTimeFactor);
             man->SetGravity(gravity);
         }
