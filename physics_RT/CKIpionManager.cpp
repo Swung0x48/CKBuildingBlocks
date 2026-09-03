@@ -992,6 +992,12 @@ void CKIpionManager::ResetProfiler()
     m_DePhysicalizeCalls = 0;
 }
 
+// BMMO (engine change #8): the world-matrix-to-quaternion conversion of
+// FillTemplateInfo, one algorithm compiled into the plugin so that two hosts
+// with different VxMath builds physicalize a rotated entity with the same
+// quaternion.
+static void PhysicsQuaternionFromMatrix(const VxMatrix &mat, VxQuaternion &quat);
+
 void CKIpionManager::FillTemplateInfo(IVP_Template_Real_Object *templ, IVP_U_Point *position, IVP_U_Quat *quaternion,
                                       CKSTRING name, float mass, IVP_Material *material, float linearSpeedDampening,
                                       float rotSpeedDampening, CK3dEntity *target, CKBOOL fixed,
@@ -1025,13 +1031,60 @@ void CKIpionManager::FillTemplateInfo(IVP_Template_Real_Object *templ, IVP_U_Poi
     position->k[1] = mat[3][1];
     position->k[2] = mat[3][2];
 
+    // BMMO (engine change #8): the quaternion is derived here, with one
+    // algorithm compiled into this plugin, instead of by VxQuaternion::
+    // FromMatrix of whichever VxMath the host runs (the game's VxMath.dll and
+    // the reimplementation differ in the last bit for general rotations, and
+    // a body physicalized with a different quaternion on two peers of a
+    // networked simulation never agrees again).  The algorithm is the
+    // reimplementation's, so an existing headless replay is unchanged.
     VxQuaternion quat;
-    quat.FromMatrix(mat);
+    PhysicsQuaternionFromMatrix(mat, quat);
 
     quaternion->x = quat.x;
     quaternion->y = quat.y;
     quaternion->z = quat.z;
     quaternion->w = quat.w;
+}
+
+static void PhysicsQuaternionFromMatrix(const VxMatrix &mat, VxQuaternion &quat)
+{
+    const float epsilon = 1.192092896e-07F;
+    const float trace = mat[0][0] + mat[1][1] + mat[2][2];
+    if (trace > 0.0f)
+    {
+        float s = sqrtf(trace + 1.0f);
+        quat.w = s * 0.5f;
+        s = 0.5f / s;
+        quat.x = (mat[2][1] - mat[1][2]) * s;
+        quat.y = (mat[0][2] - mat[2][0]) * s;
+        quat.z = (mat[1][0] - mat[0][1]) * s;
+        return;
+    }
+    int i = 0;
+    if (mat[1][1] > mat[0][0])
+        i = 1;
+    if (mat[2][2] > mat[i][i])
+        i = 2;
+    static const int next[3] = {1, 2, 0};
+    const int j = next[i];
+    const int k = next[j];
+    float s = sqrtf(mat[i][i] - mat[j][j] - mat[k][k] + 1.0f);
+    float *q[4] = {&quat.x, &quat.y, &quat.z, &quat.w};
+    *q[i] = s * 0.5f;
+    if (s > epsilon)
+    {
+        s = 0.5f / s;
+        *q[3] = (mat[k][j] - mat[j][k]) * s;
+        *q[j] = (mat[j][i] + mat[i][j]) * s;
+        *q[k] = (mat[k][i] + mat[i][k]) * s;
+    }
+    else
+    {
+        *q[3] = 1.0f;
+        *q[j] = 0.0f;
+        *q[k] = 0.0f;
+    }
 }
 
 int CKIpionManager::AddConvexSurface(IVP_SurfaceBuilder_Ledge_Soup *builder, CKMesh *convex, VxVector *scale)
