@@ -852,6 +852,34 @@ void CKIpionManager::AddCollisionSurface(const char *name, IVP_SurfaceManager *c
     }
 }
 
+// BMMO (engine change #9): drop one named entry so the next Physicalize
+// compiles the surface again from the entity as it stands now.  The caller
+// must know that no live physics object still uses it - the surface and its
+// compact form are freed here.
+CKBOOL CKIpionManager::RemoveCollisionSurface(const char *name)
+{
+    if (!name || !m_CollisionSurfaces)
+        return FALSE;
+
+    IVP_SurfaceManager *surman = (IVP_SurfaceManager *)m_CollisionSurfaces->find(name);
+    if (!surman)
+        return FALSE;
+
+    m_CollisionSurfaces->remove(name);
+
+    for (int i = m_CollisionSurfaceOwners.len() - 1; i >= 0; --i)
+    {
+        PhysicsCollisionSurface *surface = m_CollisionSurfaceOwners.element_at(i);
+        if (surface && surface->m_SurfaceManager == surman)
+        {
+            m_CollisionSurfaceOwners.remove_at(i);
+            DeleteCollisionSurfaceOwner(surface);
+        }
+    }
+
+    return TRUE;
+}
+
 void CKIpionManager::DeleteCollisionSurfaces()
 {
     for (int i = m_CollisionSurfaceOwners.len() - 1; i >= 0; --i)

@@ -188,6 +188,10 @@ public:
                                     IVP_Compact_Surface *compactSurface);
     void AddCollisionSurface(const char *name, IVP_SurfaceManager *collisionSurface,
                              IVP_Compact_Surface *compactSurface);
+    // BMMO (engine change #9): forget one named surface, so the next
+    // Physicalize compiles it again from the entity as it stands then.  The
+    // surface is freed, so no live physics object may still use it.
+    CKBOOL RemoveCollisionSurface(const char *name);
 
     void DeleteCollisionSurfaces();
     void DeletePrivateCollisionSurface(CK_ID owner);
