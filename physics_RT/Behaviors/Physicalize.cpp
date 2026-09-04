@@ -107,8 +107,10 @@ int Physicalize(const CKBehaviorContext &behcontext)
         {
             // BMMO (engine change #6): the body survived a guarded
             // Unphysicalize while the script moved the entity back to its
-            // initial pose; the entity follows the body again.
-            if (man->m_KeepLevelBodies && po->m_RealObject)
+            // initial pose; the entity follows the body again.  An entity the
+            // guard does not cover (engine change #13) keeps the retail
+            // behaviour: whatever moved it stands.
+            if (man->KeepsBodyOf(ent->GetID()) && po->m_RealObject)
                 CKIpionManager::UpdateObjectWorldMatrix(po->m_RealObject);
             beh->ActivateOutput(0, TRUE);
             return CKBR_OK;
@@ -219,8 +221,9 @@ int Physicalize(const CKBehaviorContext &behcontext)
         beh->ActivateInput(1, FALSE);
 
         // BMMO (engine change #6): a networked physics session keeps the
-        // level bodies; only the player's ball may be unphysicalized.
-        if (man->m_KeepLevelBodies && ent->GetID() != man->m_KeepLevelBodiesExcept)
+        // level bodies; only the player's ball and the entities the bridge
+        // exempted (engine change #13) may be unphysicalized.
+        if (man->KeepsBodyOf(ent->GetID()))
         {
             beh->ActivateOutput(1, TRUE);
             return CKBR_OK;

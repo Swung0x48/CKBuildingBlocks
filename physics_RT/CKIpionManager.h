@@ -4,6 +4,7 @@
 #include "CKBaseManager.h"
 #include "CKAttributeManager.h"
 #include "CKContext.h"
+#include "XArray.h"
 #include "XNHashTable.h"
 #include "VxTimeProfiler.h"
 
@@ -269,6 +270,19 @@ public:
     // delete and recreate the shared mechanisms the server keeps.
     int m_KeepLevelBodies;
     CK_ID m_KeepLevelBodiesExcept;
+    // BMMO (engine change #13): entities the guard never covers.  The guard
+    // is meant for the level's own bodies; a body that the ball scripts
+    // create and destroy again within a session (the trafo explosion pieces)
+    // is not one of them, and keeping it alive makes the next explosion
+    // silently re-use the bodies - and the poses - of the previous one.
+    XArray<CK_ID> m_KeepLevelBodiesFree;
+
+    // Whether the body guard covers this entity's body: the guard is on, the
+    // entity is neither the player's ball nor one of the exempt entities.
+    CKBOOL KeepsBodyOf(CK_ID id) const
+    {
+        return m_KeepLevelBodies && id != m_KeepLevelBodiesExcept && !m_KeepLevelBodiesFree.IsHere(id);
+    }
 };
 
 #endif // PHYSICS_RT_IPIONMANAGER_H
