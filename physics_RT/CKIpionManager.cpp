@@ -27,6 +27,37 @@ static bool IsZeroVector(const VxVector &v)
     return fabsf(v.x) <= 0.0001f && fabsf(v.y) <= 0.0001f && fabsf(v.z) <= 0.0001f;
 }
 
+// BMMO (engine change #10): the scale of an entity, derived here instead of by
+// CK3dEntity::GetScale of whichever VxMath the host runs.  A row of a level's
+// matrix is never exactly unit length, so the square root differs in the last
+// bit between the game's VxMath.dll and a reimplementation, and the scale
+// multiplies every mesh vertex of a compiled collision hull.  The algorithm is
+// the reimplementation's, so a headless result is unchanged.
+void CKIpionManager::PhysicsScaleFromMatrix(const VxMatrix &mat, VxVector &scale)
+{
+    for (int r = 0; r < 3; ++r)
+    {
+        const float x = mat[r][0], y = mat[r][1], z = mat[r][2];
+        (&scale.x)[r] = sqrtf(x * x + y * y + z * z);
+    }
+}
+
+// BMMO (engine change #10): one row of an entity's world matrix, normalised
+// here rather than by CK3dEntity::GetOrientation, for the same reason.
+void CKIpionManager::PhysicsAxisFromMatrix(const VxMatrix &mat, int row, VxVector &axis)
+{
+    const float x = mat[row][0], y = mat[row][1], z = mat[row][2];
+    axis.Set(x, y, z);
+    const float magnitude_squared = x * x + y * y + z * z;
+    if (magnitude_squared > 1.192092896e-07F)
+    {
+        const float inverse = 1.0f / sqrtf(magnitude_squared);
+        axis.x *= inverse;
+        axis.y *= inverse;
+        axis.z *= inverse;
+    }
+}
+
 static void DeleteCollisionSurfaceOwner(PhysicsCollisionSurface *surface)
 {
     if (!surface)
@@ -419,8 +450,9 @@ int CKIpionManager::CreatePhysicsObjectOnParameters(CK3dEntity *target, int conv
     if (!target || !m_Environment)
         return CKERR_INVALIDPARAMETER;
 
+    // BMMO (engine change #10): GetScale reads the local matrix.
     VxVector scale;
-    target->GetScale(&scale);
+    PhysicsScaleFromMatrix(target->GetLocalMatrix(), scale);
 
     IVP_Real_Object *obj = NULL;
 
@@ -1259,8 +1291,9 @@ void CKIpionManager::UpdateObjectWorldMatrix(IVP_Real_Object *obj)
     if (!ent)
         return;
 
+    // BMMO (engine change #10): GetScale(..., FALSE) reads the world matrix.
     VxVector scale(1.0f, 1.0f, 1.0f);
-    ent->GetScale(&scale, FALSE);
+    PhysicsScaleFromMatrix(ent->GetWorldMatrix(), scale);
 
     IVP_U_Matrix mat;
     obj->get_m_world_f_object_AT(&mat);

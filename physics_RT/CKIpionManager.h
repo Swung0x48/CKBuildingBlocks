@@ -221,6 +221,11 @@ public:
                               float radius, VxVector *scale);
 
     static void UpdateObjectWorldMatrix(IVP_Real_Object *obj);
+    // BMMO (engine change #10): geometry the physics consumes is derived here,
+    // not by the host's CK3dEntity/VxMath, so two hosts feed the simulation
+    // the same numbers.
+    static void PhysicsScaleFromMatrix(const VxMatrix &mat, VxVector &scale);
+    static void PhysicsAxisFromMatrix(const VxMatrix &mat, int row, VxVector &axis);
 
     static CKIpionManager *GetManager(CKContext *context)
     {

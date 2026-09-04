@@ -113,7 +113,11 @@ public:
 
         VxVector dir;
         VxVector pos;
-        referential->GetOrientation(&dir, &pos);
+        // BMMO (engine change #10): GetOrientation normalises the world
+        // matrix row, and that square root differs in the last bit between
+        // the game's VxMath and a reimplementation, which moves the hinge
+        // axis and with it every body the hinge drives.
+        CKIpionManager::PhysicsAxisFromMatrix(referential->GetWorldMatrix(), 2, dir);
         referential->GetPosition(&pos);
 
         IVP_U_Point anchor(pos.x, pos.y, pos.z);
