@@ -205,6 +205,7 @@ CKIpionManager::CKIpionManager(CKContext *context)
     m_DePhysicalizeCalls = 0;
     m_KeepLevelBodies = 0;
     m_KeepLevelBodiesExcept = 0;
+    m_ScriptWakeupObserver = NULL;
     m_HasPhysicsTime = 0.0f;
     m_DePhysicalizeTime = 0.0f;
     field_FC = 0.0f;
@@ -793,6 +794,23 @@ void CKIpionManager::Simulate(float deltaTime)
             UpdateObjectWorldMatrix(obj);
         }
     }
+}
+
+void CKIpionManager::NotifyScriptWakeup(IVP_Real_Object *object)
+{
+    if (m_ScriptWakeupObserver && object && object->get_environment() == m_Environment
+        && !object->get_core()->physical_unmoveable)
+        m_ScriptWakeupObserver(object);
+}
+
+void CKIpionManager::WakeUpFromScript(IVP_Real_Object *object)
+{
+    if (!object)
+        return;
+    object->ensure_in_simulation();
+    // The local predicted body may already be awake while the authoritative
+    // body is asleep. The explicit script intent must survive either state.
+    NotifyScriptWakeup(object);
 }
 
 void CKIpionManager::ResetSimulationClock()

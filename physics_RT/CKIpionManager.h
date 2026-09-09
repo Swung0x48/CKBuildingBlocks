@@ -228,6 +228,12 @@ public:
     static void PhysicsScaleFromMatrix(const VxMatrix &mat, VxVector &scale);
     static void PhysicsAxisFromMatrix(const VxMatrix &mat, int row, VxVector &axis);
 
+    // A script explicitly requests a wake. Keep this separate from IVP's
+    // revived notification, which also fires for collisions and state
+    // restoration. The observer does not participate in the simulation.
+    void WakeUpFromScript(IVP_Real_Object *object);
+    void NotifyScriptWakeup(IVP_Real_Object *object);
+
     static CKIpionManager *GetManager(CKContext *context)
     {
         return (CKIpionManager *)context->GetManagerByGuid(TT_PHYSICS_MANAGER_GUID);
@@ -276,6 +282,11 @@ public:
     // is not one of them, and keeping it alive makes the next explosion
     // silently re-use the bodies - and the poses - of the previous one.
     XArray<CK_ID> m_KeepLevelBodiesFree;
+
+    // BMMO: appended after the existing manager layout. Installed by the
+    // bridge's event logger; null for an ordinary physics_RT user. The
+    // callback receives a live object and must not retain its pointer.
+    void (*m_ScriptWakeupObserver)(IVP_Real_Object *object);
 
     // Whether the body guard covers this entity's body: the guard is on, the
     // entity is neither the player's ball nor one of the exempt entities.

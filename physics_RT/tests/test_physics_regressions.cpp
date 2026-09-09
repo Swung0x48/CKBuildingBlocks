@@ -217,6 +217,103 @@ void CollisionCachePolicyIsExplicitAndDeterministic()
           "Physicalize's runtime path must not infer collision geometry from the current render mesh");
 }
 
+int scriptWakeups = 0;
+IVP_Real_Object *lastScriptWakeup = NULL;
+
+void CountScriptWakeup(IVP_Real_Object *object)
+{
+    ++scriptWakeups;
+    lastScriptWakeup = object;
+}
+
+class WakeupListener : public IVP_Listener_Object
+{
+public:
+    int revived = 0;
+    void event_object_deleted(IVP_Event_Object *) override {}
+    void event_object_created(IVP_Event_Object *) override {}
+    void event_object_revived(IVP_Event_Object *) override { ++revived; }
+    void event_object_frozen(IVP_Event_Object *) override {}
+};
+
+void ScriptWakeupsAreDistinctFromSimulationRevival()
+{
+    PhysicsFixture &fixture = GetPhysicsFixture();
+    CKIpionManager &manager = *fixture.manager;
+    // This fixture creates its environment directly, without the CK init
+    // callback which normally starts the manager's clock.
+    manager.SetTimeFactor(1.0f);
+    RCK3dObject entity(fixture.context, "ScriptWakeupProbe");
+    IVP_Material_Simple material(0.4f, 0.5f);
+    WakeupListener listener;
+    manager.GetEnvironment()->add_listener_object_global(&listener);
+    void (*previousObserver)(IVP_Real_Object *) = manager.m_ScriptWakeupObserver;
+    struct Cleanup
+    {
+        CKIpionManager &manager;
+        CK3dEntity *entity;
+        WakeupListener *listener;
+        void (*previousObserver)(IVP_Real_Object *);
+        ~Cleanup()
+        {
+            manager.m_ScriptWakeupObserver = previousObserver;
+            manager.GetEnvironment()->remove_listener_object_global(listener);
+            DeletePhysicsObject(manager, *entity);
+        }
+    } cleanup{manager, AsEntity(entity), &listener, previousObserver};
+    scriptWakeups = 0;
+    lastScriptWakeup = NULL;
+    manager.m_ScriptWakeupObserver = CountScriptWakeup;
+
+    Check(manager.CreatePhysicsObjectOnParameters(
+              AsEntity(entity), 0, NULL, 0, NULL, NULL, 0, NULL, 1.0f, NULL, NULL,
+              FALSE, &material, 1.0f, const_cast<char *>("RegTest"),
+              TRUE, FALSE, TRUE, 0.1f, 0.1f) == CK_OK,
+          "Unable to create sleeping wakeup probe");
+    IVP_Real_Object *object = manager.GetPhysicsObject(AsEntity(entity))->m_RealObject;
+    Check(object->get_movement_state() == IVP_MT_NOT_SIM, "Probe should start asleep");
+    Check(scriptWakeups == 0, "Manager creation must not impersonate a script wakeup");
+
+    // This is the same delayed wake used by state restoration and IVP
+    // collision paths. It produces a real revived event, but no script intent.
+    object->ensure_in_simulation();
+    for (int i = 0; i < 4; ++i) manager.Simulate(1000.0f / 66.0f);
+    Check(listener.revived == 1, "A direct IVP wake must still reach diagnostics");
+    Check(scriptWakeups == 0, "An IVP revival must not become a script wakeup");
+    Check(object->disable_simulation() == IVP_TRUE, "Unable to freeze wakeup probe");
+
+    // A callback that only succeeds on a later PreSimulate pass invokes
+    // this same path there; its source survives independently of timing.
+    manager.WakeUpFromScript(object);
+    Check(scriptWakeups == 1 && lastScriptWakeup == object,
+          "An explicit script wake must identify its target");
+    for (int i = 0; i < 4; ++i) manager.Simulate(1000.0f / 66.0f);
+    Check(listener.revived == 2, "Script wakes must keep the ordinary IVP lifecycle");
+    manager.WakeUpFromScript(object);
+    Check(scriptWakeups == 2, "Explicit intent must survive an already-awake predicted target");
+
+    Check(object->disable_simulation() == IVP_TRUE, "Unable to freeze before restoring the probe");
+    IVP_U_Quat rotation;
+    IVP_U_Point position;
+    object->calc_at_quaternion(manager.GetSimulationTime(), &rotation, &position);
+    position.k[0] += 5.0;
+    object->beam_object_to_new_position(&rotation, &position, IVP_TRUE);
+    object->ensure_in_simulation();
+    for (int i = 0; i < 4; ++i) manager.Simulate(1000.0f / 66.0f);
+    Check(listener.revived == 3, "Restoring a sleeping body must retain its diagnostic revival");
+    Check(scriptWakeups == 2, "A restored and re-simulated body must not produce script intent");
+
+    DeletePhysicsObject(manager, *AsEntity(entity));
+    Check(manager.CreatePhysicsObjectOnParameters(
+              AsEntity(entity), 0, NULL, 0, NULL, NULL, 0, NULL, 1.0f, NULL, NULL,
+              TRUE, &material, 1.0f, const_cast<char *>("RegTest"),
+              TRUE, FALSE, TRUE, 0.1f, 0.1f) == CK_OK,
+          "Unable to create fixed wakeup probe");
+    object = manager.GetPhysicsObject(AsEntity(entity))->m_RealObject;
+    manager.WakeUpFromScript(object);
+    Check(scriptWakeups == 2, "A fixed target must not generate a wakeup report");
+}
+
 struct TestCase
 {
     const char *name;
@@ -232,6 +329,7 @@ int main()
         {"Named surface reuse does not need geometry", &NamedSurfaceReuseDoesNotNeedGeometry},
         {"Unknown named surface does not guess current mesh", &UnknownNamedSurfaceDoesNotGuessCurrentMesh},
         {"Physics world matrix updates keep scale stable", &PhysicsWorldMatrixUpdatesKeepWorldScaleStable},
+        {"Script wakeups are distinct from simulation revival", &ScriptWakeupsAreDistinctFromSimulationRevival},
     };
 
     int failed = 0;

@@ -107,7 +107,7 @@ int PhysicsImpulse(const CKBehaviorContext &behcontext)
     if (core->physical_unmoveable)
         return CKBR_OK;
 
-    obj->ensure_in_simulation();
+    man->WakeUpFromScript(obj);
 
     VxVector vec;
     if (referential)

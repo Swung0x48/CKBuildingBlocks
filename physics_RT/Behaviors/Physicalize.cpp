@@ -199,7 +199,15 @@ int Physicalize(const CKBehaviorContext &behcontext)
                                                        mass, collisionGroup, startFrozen, enableCollision,
                                                        autoCalcMassCenter, linearSpeedDampening, rotSpeedDampening);
         if (ret == CK_OK)
+        {
             man->OwnMaterial(ent, material);
+            // Only the script's successful creation is an external wake
+            // intent. Remote replicas use the manager's creation API too,
+            // so recording there would feed corrections back to the server.
+            if (!fixed && !startFrozen)
+                if (PhysicsObject *created = man->GetPhysicsObject(ent))
+                    man->NotifyScriptWakeup(created->m_RealObject);
+        }
         else
             delete material;
 

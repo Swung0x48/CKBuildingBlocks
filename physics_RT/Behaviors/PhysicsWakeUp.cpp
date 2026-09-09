@@ -66,7 +66,7 @@ public:
         if (!po)
             return 0;
 
-        po->m_RealObject->ensure_in_simulation();
+        m_IpionManager->WakeUpFromScript(po->m_RealObject);
 
         return 1;
     }
