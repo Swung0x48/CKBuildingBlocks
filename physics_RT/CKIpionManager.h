@@ -288,6 +288,18 @@ public:
     // callback receives a live object and must not retain its pointer.
     void (*m_ScriptWakeupObserver)(IVP_Real_Object *object);
 
+    // BMMO (design 9.26 diagnostics): called when a Set Physics Ball Joint block
+    // has built its constraint, with the two bodies it links and whether it
+    // was built from the block itself (deferred = 0) or from the pre-simulate
+    // pass that retries the callbacks the block queued (deferred = 1).  Null
+    // for an ordinary physics_RT user.
+    void (*m_ConstraintObserver)(IVP_Real_Object *reference, IVP_Real_Object *attached, int deferred);
+    // BMMO (design 9.26 diagnostics): a SetPhysicsForce block built its
+    // controller: the body, the world-space force, the core-space position.
+    void (*m_ForceObserver)(IVP_Real_Object *object, const IVP_U_Point *force_ws, const IVP_U_Point *pos_cs, int deferred);
+    // > 0 while PhysicsCallbackContainer::Process() runs the queued callbacks.
+    int m_ProcessingQueuedCallbacks;
+
     // Whether the body guard covers this entity's body: the guard is on, the
     // entity is neither the player's ball nor one of the exempt entities.
     CKBOOL KeepsBodyOf(CK_ID id) const

@@ -88,6 +88,8 @@ void PhysicsCallbackContainer::Process()
 {
     PhysicsCallbackProcessingScope processing(m_IpionManager);
 
+    if (m_IpionManager)
+        ++m_IpionManager->m_ProcessingQueuedCallbacks;
     m_HasCallbacks = FALSE;
     for (int i = 0; i < 3; ++i)
     {
@@ -105,6 +107,8 @@ void PhysicsCallbackContainer::Process()
         if (cbs.len() != 0)
             m_HasCallbacks = TRUE;
     }
+    if (m_IpionManager && m_IpionManager->m_ProcessingQueuedCallbacks > 0)
+        --m_IpionManager->m_ProcessingQueuedCallbacks;
 }
 
 void PhysicsCallbackContainer::Process(PhysicsCallback *pc)

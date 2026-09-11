@@ -181,6 +181,8 @@ public:
 
         PhysicsControllerForce *controller = new PhysicsControllerForce(obj, pos, force);
         beh->SetLocalParameterValue(0, &controller);
+        if (m_IpionManager->m_ForceObserver)
+            m_IpionManager->m_ForceObserver(obj, &force, &pos, m_IpionManager->m_ProcessingQueuedCallbacks > 0 ? 1 : 0);
 
         return 1;
     }

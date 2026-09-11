@@ -206,6 +206,9 @@ CKIpionManager::CKIpionManager(CKContext *context)
     m_KeepLevelBodies = 0;
     m_KeepLevelBodiesExcept = 0;
     m_ScriptWakeupObserver = NULL;
+    m_ConstraintObserver = NULL;
+    m_ForceObserver = NULL;
+    m_ProcessingQueuedCallbacks = 0;
     m_HasPhysicsTime = 0.0f;
     m_DePhysicalizeTime = 0.0f;
     field_FC = 0.0f;

@@ -150,6 +150,8 @@ public:
 
         IVP_Constraint *constraint = m_IpionManager->CreateConstraint(&tmpl);
         beh->SetLocalParameterValue(IVP_HANDLE, &constraint);
+        if (m_IpionManager->m_ConstraintObserver)
+            m_IpionManager->m_ConstraintObserver(objR, objA, m_IpionManager->m_ProcessingQueuedCallbacks > 0 ? 1 : 0);
 
         return CKBR_ACTIVATENEXTFRAME;
     }
