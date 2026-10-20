@@ -231,6 +231,65 @@ int PhysicsForce(const CKBehaviorContext &behcontext)
     return CKBR_OK;
 }
 
+// BallanceMMO: the controller a SetPhysicsForce block holds, for the client's
+// rollback.  A replay that re-executes the mechanism scripts has to start them
+// from the anchor's state, and the one piece of that state CK does not carry is
+// the IVP controller the block created (a raw pointer in local parameter 0):
+// the rollback records whether the block had one and where it pushed, and puts
+// that back - deleting a controller the anchor did not have, re-creating one it
+// had - so the replayed Shutdown / Create edges meet the object they expect.
+// The point and the force are the ones the controller was built with, in the
+// body's object space (see PhysicsForceCallback::Execute).  Called from the
+// physics bridge (BallanceMMOCommon/src/physics/physics_state.cpp).
+extern "C" int BmmoPhysicsForceBlockState(CKBehavior *beh, int *exists, double pos[3], double force[3])
+{
+    if (!beh || !exists || !pos || !force)
+        return 0;
+    PhysicsControllerForce *controller = NULL;
+    beh->GetLocalParameterValue(0, &controller);
+    *exists = controller ? 1 : 0;
+    for (int k = 0; k < 3; ++k)
+    {
+        pos[k] = controller ? controller->m_Position.k[k] : 0.0;
+        force[k] = controller ? controller->m_Force.k[k] : 0.0;
+    }
+    return 1;
+}
+
+extern "C" int BmmoPhysicsForceBlockRestore(CKBehavior *beh, int exists, const double pos[3], const double force[3])
+{
+    if (!beh || !pos || !force)
+        return 0;
+    PhysicsControllerForce *controller = NULL;
+    beh->GetLocalParameterValue(0, &controller);
+    if (!exists)
+    {
+        if (controller)
+        {
+            delete controller;
+            controller = NULL;
+            beh->SetLocalParameterValue(0, &controller);
+        }
+        return 1;
+    }
+    if (controller)
+    {
+        controller->m_Position.set(pos[0], pos[1], pos[2]);
+        controller->m_Force.set(force[0], force[1], force[2]);
+        return 1;
+    }
+    CK3dEntity *ent = (CK3dEntity *)beh->GetTarget();
+    CKIpionManager *man = CKIpionManager::GetManager(beh->GetCKContext());
+    PhysicsObject *po = (ent && man) ? man->GetPhysicsObject(ent) : NULL;
+    if (!po || !po->m_RealObject)
+        return 0;
+    IVP_U_Point p(pos[0], pos[1], pos[2]);
+    IVP_U_Point f(force[0], force[1], force[2]);
+    controller = new PhysicsControllerForce(po->m_RealObject, p, f);
+    beh->SetLocalParameterValue(0, &controller);
+    return 1;
+}
+
 CKERROR PhysicsForceCallBack(const CKBehaviorContext &behcontext)
 {
     if (behcontext.CallbackMessage == CKM_BEHAVIORRESET ||
