@@ -112,9 +112,17 @@ public:
 
     IVP_CONTROLLER_PRIORITY get_controller_priority() { return IVP_CP_ACTUATOR; };
 
+    // BallanceMMO engine change #18: the controller is named after the block
+    // that made it ("rt:force/<behavior id>"), so that two force blocks on one
+    // body are two controllers the savestate can tell apart when it puts the
+    // core's controller order back.  IVP reads the name for diagnostics only.
+    const char *get_controller_name() { return m_Name[0] ? m_Name : IVP_Controller_Independent::get_controller_name(); }
+    void SetBehavior(CK_ID id) { snprintf(m_Name, sizeof(m_Name), "rt:force/%u", (unsigned)id); }
+
     IVP_Core *m_Core;
     IVP_U_Point m_Position;
     IVP_U_Point m_Force;
+    char m_Name[32] = "";
 };
 
 class PhysicsForceCallback : public PhysicsCallback
@@ -180,6 +188,7 @@ public:
         }
 
         PhysicsControllerForce *controller = new PhysicsControllerForce(obj, pos, force);
+        controller->SetBehavior(beh->GetID());
         beh->SetLocalParameterValue(0, &controller);
         if (m_IpionManager->m_ForceObserver)
             m_IpionManager->m_ForceObserver(obj, &force, &pos, m_IpionManager->m_ProcessingQueuedCallbacks > 0 ? 1 : 0);
@@ -286,6 +295,7 @@ extern "C" int BmmoPhysicsForceBlockRestore(CKBehavior *beh, int exists, const d
     IVP_U_Point p(pos[0], pos[1], pos[2]);
     IVP_U_Point f(force[0], force[1], force[2]);
     controller = new PhysicsControllerForce(po->m_RealObject, p, f);
+    controller->SetBehavior(beh->GetID());
     beh->SetLocalParameterValue(0, &controller);
     return 1;
 }
