@@ -204,6 +204,7 @@ CKIpionManager::CKIpionManager(CKContext *context)
     m_PhysicalizeCalls = 0;
     m_DePhysicalizeCalls = 0;
     m_KeepLevelBodies = 0;
+    m_CurrentCreate = NULL;
     m_KeepLevelBodiesExcept = 0;
     m_ScriptWakeupObserver = NULL;
     m_ConstraintObserver = NULL;
@@ -453,6 +454,19 @@ int CKIpionManager::CreatePhysicsObjectOnParameters(CK3dEntity *target, int conv
 {
     if (!target || !m_Environment)
         return CKERR_INVALIDPARAMETER;
+
+    // BMMO (engine change #19): the arguments, visible to the object listener
+    // while the body is created (see m_CurrentCreate).
+    const PhysicsCreateParams createParams = {
+        target, convexCount, convexes, ballCount, ballPositions, ballRadii, concaveCount, concaves, ballRadius,
+        collisionSurface, shiftMassCenter, fixed, material, mass, collisionGroup, startFrozen, enableCollision,
+        autoCalcMassCenter, linearSpeedDampening, rotSpeedDampening};
+    struct CreateParamsScope
+    {
+        CKIpionManager *manager;
+        ~CreateParamsScope() { manager->m_CurrentCreate = NULL; }
+    } createParamsScope = {this};
+    m_CurrentCreate = &createParams;
 
     // BMMO (engine change #10): GetScale reads the local matrix.
     VxVector scale;

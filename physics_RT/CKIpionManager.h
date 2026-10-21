@@ -126,6 +126,37 @@ public:
     PhysicsObject *GetPhysicsObject(CK3dEntity *entity, CKBOOL logging = FALSE);
     void RemovePhysicsObject(CK3dEntity *entity);
 
+    // BMMO (engine change #19): the parameters of the body being created, for
+    // the bridge's object listener to record with the creation event - a
+    // rollback that re-creates a body born inside its window needs the recipe
+    // the Physicalize block used, and the entity's matrix at that moment.
+    // Points at the arguments for the duration of
+    // CreatePhysicsObjectOnParameters, null otherwise.
+    struct PhysicsCreateParams
+    {
+        CK3dEntity *target;
+        int convexCount;
+        CKMesh **convexes;
+        int ballCount;
+        VxVector *ballPositions;
+        float *ballRadii;
+        int concaveCount;
+        CKMesh **concaves;
+        float ballRadius;
+        CKSTRING collisionSurface;
+        VxVector *shiftMassCenter;
+        CKBOOL fixed;
+        IVP_Material *material;
+        float mass;
+        CKSTRING collisionGroup;
+        CKBOOL startFrozen;
+        CKBOOL enableCollision;
+        CKBOOL autoCalcMassCenter;
+        float linearSpeedDampening;
+        float rotSpeedDampening;
+    };
+    const PhysicsCreateParams *m_CurrentCreate;
+
     int CreatePhysicsObjectOnParameters(CK3dEntity *target, int convexCount, CKMesh **convexes,
                                         int ballCount, VxVector *ballPositions, float *ballRadii,
                                         int concaveCount, CKMesh **concaves, float ballRadius,
