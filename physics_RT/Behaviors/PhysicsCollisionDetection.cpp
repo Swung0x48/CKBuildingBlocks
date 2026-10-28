@@ -251,6 +251,14 @@ public:
     }
 };
 
+// BallanceMMO (engine change #20): the callback of a block, constructed -
+// neither executed nor queued - for the rollback's restore of the
+// PreSimulate queue (BmmoPhysicsCallbackMake, PhysicsCallback.cpp).
+PhysicsCallback *BmmoMakeCallback_CollisionDetection(CKIpionManager *man, CKBehavior *beh)
+{
+    return new PhysicsCollDetectionCallback(man, beh);
+}
+
 int PhysicsCollDetection(const CKBehaviorContext &behcontext)
 {
     CKBehavior *beh = behcontext.Behavior;
