@@ -11,6 +11,40 @@
 #include "ivp_surbuild_pointsoup.hxx"
 #include "ivp_surman_polygon.hxx"
 
+#if defined(_M_IX86)
+#include <float.h>
+#endif
+
+// BMMO (engine change #22): the physics step and the CK matrices it writes run at
+// 53-bit x87 precision.  The retail game thread is at 24 bits (Direct3D sets it),
+// and the x86 build reaches the x87 on the way from a body's pose to its CK matrix,
+// so a rotation came out 1-4 float ulps from every other host's (x64 and arm64 use
+// SSE2 / NEON doubles, which have no precision control) - and engine change #10
+// re-reads the scale from that matrix every step, so the difference grew into the
+// size of the oriented box a script tests (trial 2, level 8: a fan's Box Box
+// Intersection 0.03 mm from its edge decided differently).  Measured with 53 bits:
+// 1073/1073 written matrices equal the server's, 171/1075 without.  The precision
+// the caller had is put back on the way out.
+namespace {
+    struct PhysicsPrecision53
+    {
+#if defined(_M_IX86)
+        unsigned int m_Saved = 0;
+        PhysicsPrecision53()
+        {
+            unsigned int ignored = 0;
+            _controlfp_s(&m_Saved, 0, 0);
+            _controlfp_s(&ignored, _PC_53, _MCW_PC);
+        }
+        ~PhysicsPrecision53()
+        {
+            unsigned int ignored = 0;
+            _controlfp_s(&ignored, m_Saved & _MCW_PC, _MCW_PC);
+        }
+#endif
+    };
+}
+
 static bool IsPhysicsHandleBehavior(CKGUID guid)
 {
     return guid == CKGUID(0x5e624f0a, 0x35160450) || // Set Physics Ball Joint
@@ -783,6 +817,7 @@ void CKIpionManager::DestroyEnvironment(CKBOOL resetBehaviorHandles)
 
 void CKIpionManager::Simulate(float deltaTime)
 {
+    PhysicsPrecision53 precision;   // engine change #22
     if (ProcessPendingReset())
         return;
 
@@ -1325,6 +1360,9 @@ void CKIpionManager::UpdateObjectWorldMatrix(IVP_Real_Object *obj)
     CK3dEntity *ent = (CK3dEntity *)obj->client_data;
     if (!ent)
         return;
+
+    // Engine change #22: also when the bridge writes a body between steps.
+    PhysicsPrecision53 precision;
 
     // BMMO (engine change #10): GetScale(..., FALSE) reads the world matrix.
     VxVector scale(1.0f, 1.0f, 1.0f);
