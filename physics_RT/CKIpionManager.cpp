@@ -13,6 +13,9 @@
 
 #if defined(_M_IX86)
 #include <float.h>
+#if defined(IVP_X87_ARITHMETIC) && IVP_X87_ARITHMETIC != 0
+#include <ivu_x87.hxx>
+#endif
 #endif
 
 // BMMO (engine change #22): the physics step and the CK matrices it writes run at
@@ -1177,6 +1180,49 @@ void CKIpionManager::FillTemplateInfo(IVP_Template_Real_Object *templ, IVP_U_Poi
     quaternion->w = quat.w;
 }
 
+#if defined(IVP_X87_ARITHMETIC) && IVP_X87_ARITHMETIC != 0
+// The game's own conversion: VxMath.dll (2002) VxQuaternion::FromMatrix(mat, TRUE, TRUE), step for step as its x87
+// code runs on the game thread, which the original physics_RT leaves at 64-bit precision with nearest rounding.  The
+// trace is summed m11 + m22 + m00, the branch is taken when the trace compares >= 0.0, every intermediate stays in
+// the 80-bit registers (0.5 / s uses the unrounded root) and only the stores round to float; the other branch has no
+// epsilon test and subtracts (m_kk + m_jj) from m_ii.  The x87 model computes the same bits on every host, so the
+// quaternion a body starts from is the original game's everywhere (engine change #8 copied the reimplementation's
+// float algorithm instead, which differs in the last bit and took TAS routes off the original).
+static void PhysicsQuaternionFromMatrix(const VxMatrix &mat, VxQuaternion &quat)
+{
+    IVP_X87_Arithmetic x87(IVP_X87_Arithmetic::PRECISION_64, IVP_X87_Arithmetic::ROUND_NEAREST);
+    const IVP_U_Float80 one = x87.load(1.0f);
+    const IVP_U_Float80 half = x87.load(0.5f);
+    const IVP_U_Float80 trace = x87.add(x87.add(x87.load(mat[1][1]), x87.load(mat[2][2])), x87.load(mat[0][0]));
+    const IVP_X87_Arithmetic::Relation sign = x87.compare(trace, x87.load(0.0));
+    if (sign == IVP_X87_Arithmetic::GREATER || sign == IVP_X87_Arithmetic::EQUAL)
+    {
+        const IVP_U_Float80 s = x87.square_root(x87.add(trace, one));
+        quat.w = x87.store_float(x87.multiply(half, s));
+        const IVP_U_Float80 r = x87.divide(half, s);
+        quat.x = x87.store_float(x87.multiply(x87.subtract(x87.load(mat[2][1]), x87.load(mat[1][2])), r));
+        quat.y = x87.store_float(x87.multiply(x87.subtract(x87.load(mat[0][2]), x87.load(mat[2][0])), r));
+        quat.z = x87.store_float(x87.multiply(x87.subtract(x87.load(mat[1][0]), x87.load(mat[0][1])), r));
+        return;
+    }
+    int i = 0;
+    if (x87.compare(x87.load(mat[1][1]), x87.load(mat[0][0])) == IVP_X87_Arithmetic::GREATER)
+        i = 1;
+    if (x87.compare(x87.load(mat[2][2]), x87.load(mat[i][i])) == IVP_X87_Arithmetic::GREATER)
+        i = 2;
+    static const int next[3] = {1, 2, 0};
+    const int j = next[i];
+    const int k = next[j];
+    IVP_U_Float80 s = x87.subtract(x87.load(mat[i][i]), x87.add(x87.load(mat[k][k]), x87.load(mat[j][j])));
+    s = x87.square_root(x87.add(s, one));
+    float *q[4] = {&quat.x, &quat.y, &quat.z, &quat.w};
+    *q[i] = x87.store_float(x87.multiply(half, s));
+    const IVP_U_Float80 r = x87.divide(half, s);
+    *q[j] = x87.store_float(x87.multiply(x87.add(x87.load(mat[j][i]), x87.load(mat[i][j])), r));
+    *q[k] = x87.store_float(x87.multiply(x87.add(x87.load(mat[k][i]), x87.load(mat[i][k])), r));
+    *q[3] = x87.store_float(x87.multiply(x87.subtract(x87.load(mat[k][j]), x87.load(mat[j][k])), r));
+}
+#else
 static void PhysicsQuaternionFromMatrix(const VxMatrix &mat, VxQuaternion &quat)
 {
     const float epsilon = 1.192092896e-07F;
@@ -1216,6 +1262,7 @@ static void PhysicsQuaternionFromMatrix(const VxMatrix &mat, VxQuaternion &quat)
         *q[k] = 0.0f;
     }
 }
+#endif
 
 int CKIpionManager::AddConvexSurface(IVP_SurfaceBuilder_Ledge_Soup *builder, CKMesh *convex, VxVector *scale)
 {
@@ -1364,10 +1411,10 @@ void CKIpionManager::UpdateObjectWorldMatrix(IVP_Real_Object *obj)
     // Engine change #22: also when the bridge writes a body between steps.
     PhysicsPrecision53 precision;
 
-    // BMMO (engine change #10): GetScale(..., FALSE) reads the world matrix.
-    VxVector scale(1.0f, 1.0f, 1.0f);
-    PhysicsScaleFromMatrix(ent->GetWorldMatrix(), scale);
-
+    // The pose goes back as the original physics_RT writes it (2002 DLL, the function at RVA 0x6ec0): the rotation and
+    // the position rounded to float, nothing else.  The entity's scale is not read or applied: re-reading it from the
+    // world matrix every step (a column length, 1 +- 1 ulp for a unit rotation) and multiplying it in made every
+    // written rotation differ from the original's from the first step on, which took TAS routes off the original.
     IVP_U_Matrix mat;
     obj->get_m_world_f_object_AT(&mat);
 
@@ -1377,15 +1424,6 @@ void CKIpionManager::UpdateObjectWorldMatrix(IVP_Real_Object *obj)
     for (int i = 0; i < 3; ++i)
         for (int j = 0; j < 3; ++j)
             m[j][i] = (float)mat.get_elem(i, j);
-    m[0][0] *= scale.x;
-    m[0][1] *= scale.x;
-    m[0][2] *= scale.x;
-    m[1][0] *= scale.y;
-    m[1][1] *= scale.y;
-    m[1][2] *= scale.y;
-    m[2][0] *= scale.z;
-    m[2][1] *= scale.z;
-    m[2][2] *= scale.z;
     m[0][3] = 0.0f;
     m[1][3] = 0.0f;
     m[2][3] = 0.0f;
