@@ -13,9 +13,9 @@
 
 #if defined(_M_IX86)
 #include <float.h>
+#endif
 #if defined(IVP_X87_ARITHMETIC) && IVP_X87_ARITHMETIC != 0
 #include <ivu_x87.hxx>
-#endif
 #endif
 
 // BMMO (engine change #22): the physics step and the CK matrices it writes run at
@@ -72,11 +72,25 @@ static bool IsZeroVector(const VxVector &v)
 // the reimplementation's, so a headless result is unchanged.
 void CKIpionManager::PhysicsScaleFromMatrix(const VxMatrix &mat, VxVector &scale)
 {
+#if defined(IVP_X87_ARITHMETIC) && IVP_X87_ARITHMETIC != 0
+    // The game's own: CK2_3D.dll (2002) takes each row's VxVector Magnitude (RVA 0xBF10): the squares summed in
+    // the x87 registers at the game thread's precision (24 bits before the first hull, 64 after), the sum stored to a float, its square root (msvcrt
+    // sqrt of the double) stored to a float - which is the correctly rounded float root on every host.  The float
+    // sum below rounded every product and partial sum and gave e.g. 0.99999994 where the game has 1.
+    IVP_X87_Arithmetic x87(IVP_X87_Control::current());   // the game thread's precision: 24 bits before the first hull, 64 after
+    for (int r = 0; r < 3; ++r)
+    {
+        const IVP_U_Float80 x = x87.load(mat[r][0]), y = x87.load(mat[r][1]), z = x87.load(mat[r][2]);
+        const float square = x87.store_float(x87.add(x87.add(x87.multiply(x, x), x87.multiply(y, y)), x87.multiply(z, z)));
+        (&scale.x)[r] = x87.store_float(x87.square_root(x87.load(square)));
+    }
+#else
     for (int r = 0; r < 3; ++r)
     {
         const float x = mat[r][0], y = mat[r][1], z = mat[r][2];
         (&scale.x)[r] = sqrtf(x * x + y * y + z * z);
     }
+#endif
 }
 
 // BMMO (engine change #10): one row of an entity's world matrix, normalised
@@ -283,11 +297,30 @@ CKERROR CKIpionManager::OnCKInit()
 {
     m_CollisionSurfaces = new IVP_U_String_Hash(64);
 
+    ResetGamePrecision();
+
     m_TimeManager = m_Context->GetTimeManager();
     m_PhysicsTimeFactor = 0.001f;
     ResetProfiler();
 
     return CK_OK;
+}
+
+void CKIpionManager::ResetGamePrecision()
+{
+#if defined(IVP_X87_ARITHMETIC) && IVP_X87_ARITHMETIC != 0
+    // The game thread starts at Direct3D's 24-bit precision; the original physics_RT raises it to 64 bits for good
+    // with the first hull it builds (convert_pointsoup_to_compact_ledge), and for the time of each event loop.  The
+    // model starts where the game does, so what is computed before the first hull (the first entity's scale,
+    // quaternion and hull points) rounds as in the game.  Measured: the first physicalize of a TAS session
+    // (Ball_Paper_piece01) has the 24-bit scale (1.0000049, 1.0000049, 1.0000048), every later one the 64-bit one.
+    // The original keeps 64 bits for the rest of the process; a BallanceMMO host goes back to 24 at every level
+    // load instead, so a host that ran another level before agrees with one that did not (a TAS replay starts a
+    // fresh process, where both rules are the same).
+    IVP_X87_Control start = IVP_X87_Control::current();
+    start.precision = IVP_X87_Arithmetic::PRECISION_24;
+    IVP_X87_Control::set(start);
+#endif
 }
 
 CKERROR CKIpionManager::OnCKEnd()
@@ -1182,7 +1215,7 @@ void CKIpionManager::FillTemplateInfo(IVP_Template_Real_Object *templ, IVP_U_Poi
 
 #if defined(IVP_X87_ARITHMETIC) && IVP_X87_ARITHMETIC != 0
 // The game's own conversion: VxMath.dll (2002) VxQuaternion::FromMatrix(mat, TRUE, TRUE), step for step as its x87
-// code runs on the game thread, which the original physics_RT leaves at 64-bit precision with nearest rounding.  The
+// code runs on the game thread, at the game thread's precision (24 bits before the first hull of the process, 64 after) with nearest rounding.  The
 // trace is summed m11 + m22 + m00, the branch is taken when the trace compares >= 0.0, every intermediate stays in
 // the 80-bit registers (0.5 / s uses the unrounded root) and only the stores round to float; the other branch has no
 // epsilon test and subtracts (m_kk + m_jj) from m_ii.  The x87 model computes the same bits on every host, so the
@@ -1190,7 +1223,7 @@ void CKIpionManager::FillTemplateInfo(IVP_Template_Real_Object *templ, IVP_U_Poi
 // float algorithm instead, which differs in the last bit and took TAS routes off the original).
 static void PhysicsQuaternionFromMatrix(const VxMatrix &mat, VxQuaternion &quat)
 {
-    IVP_X87_Arithmetic x87(IVP_X87_Arithmetic::PRECISION_64, IVP_X87_Arithmetic::ROUND_NEAREST);
+    IVP_X87_Arithmetic x87(IVP_X87_Control::current());   // the game thread's precision: 24 bits before the first hull, 64 after
     const IVP_U_Float80 one = x87.load(1.0f);
     const IVP_U_Float80 half = x87.load(0.5f);
     const IVP_U_Float80 trace = x87.add(x87.add(x87.load(mat[1][1]), x87.load(mat[2][2])), x87.load(mat[0][0]));
@@ -1299,8 +1332,22 @@ int CKIpionManager::AddConvexSurface(IVP_SurfaceBuilder_Ledge_Soup *builder, CKM
     IVP_U_Point *pts = new IVP_U_Point[count];
     for (int p = 0; p < count; ++p)
     {
+#if defined(IVP_X87_ARITHMETIC) && IVP_X87_ARITHMETIC != 0
+        // The original (RVA 0x73A1): fld scale; fmul vertex; fstp qword - the float product (48 bits) kept exact in
+        // the double qhull reads, not rounded to a float first.  The hull's triangle order follows qhull's decisions,
+        // and the float sums of the inertia integration follow that order (SR11's flap: 3e-4 in one inertia axis).
+        // AddConcaveSurface rounds its products to floats in the original too and is left as it is.  The product
+        // rounds at the game thread's precision: 64 bits keep it exact, 24 bits (before the first hull of the
+        // process) round it to a float.
+        const VxVector &v = *vertices[p];
+        IVP_X87_Arithmetic x87(IVP_X87_Control::current());
+        pts[p].set(x87.store_double(x87.multiply(x87.load(s.x), x87.load(v.x))),
+                   x87.store_double(x87.multiply(x87.load(s.y), x87.load(v.y))),
+                   x87.store_double(x87.multiply(x87.load(s.z), x87.load(v.z))));
+#else
         VxVector t = *vertices[p] * s;
         pts[p].set(t.x, t.y, t.z);
+#endif
 
         points.add(&pts[p]);
     }

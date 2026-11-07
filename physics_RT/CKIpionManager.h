@@ -201,6 +201,11 @@ public:
 
     void ResetSimulationClock();
 
+    // The x87 model's game-thread precision back to its start (24 bits until the next hull).  OnCKInit calls it
+    // once; a BallanceMMO host calls it at every level load (bridge v35), so every host computes a level's first
+    // bodies alike whatever it ran before.  No effect in a build without the x87 model.
+    void ResetGamePrecision();
+
     IVP_Time GetSimulationTime() const;
 
     float GetSimulationTimeStep() const;
