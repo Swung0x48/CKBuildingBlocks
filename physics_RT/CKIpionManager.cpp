@@ -97,6 +97,20 @@ void CKIpionManager::PhysicsScaleFromMatrix(const VxMatrix &mat, VxVector &scale
 // here rather than by CK3dEntity::GetOrientation, for the same reason.
 void CKIpionManager::PhysicsAxisFromMatrix(const VxMatrix &mat, int row, VxVector &axis)
 {
+#if defined(IVP_X87_ARITHMETIC) && IVP_X87_ARITHMETIC != 0
+    // The game's own: CK2_3D.dll (2002) GetOrientation (RVA 0x758C) returns Normalize(row) (0xBEC0): the squares
+    // summed in the x87 registers ((x*x + y*y) + z*z, 0xBF50) and stored to a float, the msvcrt square root of that
+    // value (0xBF30 calls MSVCRT!sqrt: with any control word but 0x27F its exit, 0xA566B -> 0xA5577, stores the root
+    // to a double and reloads it, as the precision flag is always set; a no-op at 24 or 53 bits), 1.0f divided by it
+    // and stored to a float, each component multiplied by that float and stored (0xBFF0).  The float formula below rounded the sum and the root and gave
+    // 6 of SR01's 34 hinge axes 1-2 ulps off.  The original has no length check.
+    IVP_X87_Arithmetic x87(IVP_X87_Control::current());   // the game thread's precision, as PhysicsScaleFromMatrix
+    const IVP_U_Float80 x = x87.load(mat[row][0]), y = x87.load(mat[row][1]), z = x87.load(mat[row][2]);
+    const float square = x87.store_float(x87.add(x87.add(x87.multiply(x, x), x87.multiply(y, y)), x87.multiply(z, z)));
+    const float inverse = x87.store_float(x87.divide(x87.load(1.0f), x87.load(x87.store_double(x87.square_root(x87.load(square))))));
+    axis.Set(x87.store_float(x87.multiply(x, x87.load(inverse))), x87.store_float(x87.multiply(y, x87.load(inverse))),
+             x87.store_float(x87.multiply(z, x87.load(inverse))));
+#else
     const float x = mat[row][0], y = mat[row][1], z = mat[row][2];
     axis.Set(x, y, z);
     const float magnitude_squared = x * x + y * y + z * z;
@@ -107,6 +121,7 @@ void CKIpionManager::PhysicsAxisFromMatrix(const VxMatrix &mat, int row, VxVecto
         axis.y *= inverse;
         axis.z *= inverse;
     }
+#endif
 }
 
 static void DeleteCollisionSurfaceOwner(PhysicsCollisionSurface *surface)
@@ -261,7 +276,7 @@ CKIpionManager::CKIpionManager(CKContext *context)
     m_ConstraintObserver = NULL;
     m_ForceObserver = NULL;
     m_ProcessingQueuedCallbacks = 0;
-    m_UnitMovementCheck = 0;
+    m_BmmoPhysics = 0;
     m_HasPhysicsTime = 0.0f;
     m_DePhysicalizeTime = 0.0f;
     field_FC = 0.0f;
@@ -307,12 +322,12 @@ CKERROR CKIpionManager::OnCKInit()
     return CK_OK;
 }
 
-void CKIpionManager::SetUnitMovementCheck(CKBOOL on)
+void CKIpionManager::SetBmmoPhysics(CKBOOL on)
 {
-    m_UnitMovementCheck = on ? 1 : 0;
+    m_BmmoPhysics = on ? 1 : 0;
 #ifdef IVP_PORTABLE_BMMO
     if (m_Environment)
-        m_Environment->bmmo_unit_movement_check = on ? IVP_TRUE : IVP_FALSE;
+        m_Environment->bmmo_physics = on ? IVP_TRUE : IVP_FALSE;
 #endif
 }
 
@@ -779,7 +794,7 @@ void CKIpionManager::CreateEnvironment()
     IVP_U_Point gravity = IVP_U_Point(0.0, -9.81, 0.0);
     m_Environment->set_gravity(&gravity);
 #ifdef IVP_PORTABLE_BMMO
-    m_Environment->bmmo_unit_movement_check = m_UnitMovementCheck ? IVP_TRUE : IVP_FALSE;
+    m_Environment->bmmo_physics = m_BmmoPhysics ? IVP_TRUE : IVP_FALSE;
 #endif
 
     m_PreSimulateCallbacks = new PhysicsCallbackContainer(this);

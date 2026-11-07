@@ -8,6 +8,9 @@
 #include "CKAll.h"
 
 #include "CKIpionManager.h"
+#if IVP_ENABLE_X87_EMULATION
+#include <ivu_x87.hxx>
+#endif
 
 CKObjectDeclaration *FillBehaviorPhysicsForceDecl();
 CKERROR CreatePhysicsForceProto(CKBehaviorPrototype **pproto);
@@ -170,7 +173,21 @@ public:
             force.set(1.0, 0.0, 0.0);
         else
             force.normize();
+#if IVP_ENABLE_X87_EMULATION
+        // The original (RVA 0x4AD5) multiplies by the float force value in the x87 registers and stores the products
+        // to the double force; the controller keeps its force as three floats (+0x30), x and z converted from those
+        // doubles, y straight from the register, and its do_simulation_controller (0x46B0) reads them back as floats.
+        IVP_X87_Arithmetic fp(IVP_X87_Control::current());
+        const IVP_U_Float80 value = fp.load(forceValue);
+        const IVP_U_Float80 force_y = fp.multiply(fp.load(force.k[1]), value);
+        force.set(fp.store_double(fp.multiply(fp.load(force.k[0]), value)), fp.store_double(force_y),
+                  fp.store_double(fp.multiply(fp.load(force.k[2]), value)));
+        const IVP_U_Point controller_force(fp.store_float(fp.load(force.k[0])), fp.store_float(force_y),
+                                           fp.store_float(fp.load(force.k[2])));
+#else
         force.mult(forceValue);
+        const IVP_U_Point &controller_force = force;
+#endif
 
         IVP_U_Point pos(position.x, position.y, position.z);
         if (referential != ent)
@@ -187,7 +204,7 @@ public:
             mat.vimult4(&p1, &pos);
         }
 
-        PhysicsControllerForce *controller = new PhysicsControllerForce(obj, pos, force);
+        PhysicsControllerForce *controller = new PhysicsControllerForce(obj, pos, controller_force);
         controller->SetBehavior(beh->GetID());
         beh->SetLocalParameterValue(0, &controller);
         if (m_IpionManager->m_ForceObserver)
