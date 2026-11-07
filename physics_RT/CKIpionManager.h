@@ -206,6 +206,12 @@ public:
     // bodies alike whatever it ran before.  No effect in a build without the x87 model.
     void ResetGamePrecision();
 
+    // BMMO (engine change #5): on while a networked physics session runs, when every simulation unit's movement
+    // check follows its own countdown; off (the default) keeps the original's one counter per environment.  Kept on
+    // the manager, so an environment made again within a session (Reset) follows it too.  No effect in a build
+    // without IVP_PORTABLE_BMMO.
+    void SetUnitMovementCheck(CKBOOL on);
+
     IVP_Time GetSimulationTime() const;
 
     float GetSimulationTimeStep() const;
@@ -335,6 +341,8 @@ public:
     void (*m_ForceObserver)(IVP_Real_Object *object, const IVP_U_Point *force_ws, const IVP_U_Point *pos_cs, int deferred);
     // > 0 while PhysicsCallbackContainer::Process() runs the queued callbacks.
     int m_ProcessingQueuedCallbacks;
+    // BMMO (engine change #5): see SetUnitMovementCheck.
+    int m_UnitMovementCheck;
 
     // Whether the body guard covers this entity's body: the guard is on, the
     // entity is neither the player's ball nor one of the exempt entities.

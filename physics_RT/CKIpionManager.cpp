@@ -261,6 +261,7 @@ CKIpionManager::CKIpionManager(CKContext *context)
     m_ConstraintObserver = NULL;
     m_ForceObserver = NULL;
     m_ProcessingQueuedCallbacks = 0;
+    m_UnitMovementCheck = 0;
     m_HasPhysicsTime = 0.0f;
     m_DePhysicalizeTime = 0.0f;
     field_FC = 0.0f;
@@ -304,6 +305,15 @@ CKERROR CKIpionManager::OnCKInit()
     ResetProfiler();
 
     return CK_OK;
+}
+
+void CKIpionManager::SetUnitMovementCheck(CKBOOL on)
+{
+    m_UnitMovementCheck = on ? 1 : 0;
+#ifdef IVP_PORTABLE_BMMO
+    if (m_Environment)
+        m_Environment->bmmo_unit_movement_check = on ? IVP_TRUE : IVP_FALSE;
+#endif
 }
 
 void CKIpionManager::ResetGamePrecision()
@@ -768,6 +778,9 @@ void CKIpionManager::CreateEnvironment()
 
     IVP_U_Point gravity = IVP_U_Point(0.0, -9.81, 0.0);
     m_Environment->set_gravity(&gravity);
+#ifdef IVP_PORTABLE_BMMO
+    m_Environment->bmmo_unit_movement_check = m_UnitMovementCheck ? IVP_TRUE : IVP_FALSE;
+#endif
 
     m_PreSimulateCallbacks = new PhysicsCallbackContainer(this);
     m_PostSimulateCallbacks = new PhysicsCallbackContainer(this);
