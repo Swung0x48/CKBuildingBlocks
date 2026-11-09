@@ -10,6 +10,11 @@
 #include "ivp_performancecounter.hxx"
 #include "ivp_surbuild_pointsoup.hxx"
 #include "ivp_surman_polygon.hxx"
+#include "ivp_compact_surface.hxx"
+
+#include <string.h>
+#include <unordered_map>
+#include <vector>
 
 #if defined(_M_IX86)
 #include <float.h>
@@ -102,6 +107,77 @@ static void DeleteCollisionSurfaceOwner(PhysicsCollisionSurface *surface)
         ivp_free_aligned(surface->m_CompactSurface);
     delete surface;
 }
+
+// BMMO (engine change #24): a collision surface is a pure function of what it is
+// built from - the scale and the convex meshes' vertex positions - but the name
+// cache knows it by the caller's name.  The trafo explosion's pieces have one
+// name per player (Ball_Wood_pieceNN_Mesh_Trafo<id>) and engine change #9 drops
+// every piece's surface before the next explosion, so each explosion built its
+// 16 hulls again from the same vertices: 4 ms of a 6.5 ms tick (16 players,
+// x64), every time, rollback replays included.  This memo keeps a copy of each
+// convex-only surface's bytes with its full inputs; a later build with the same
+// inputs, byte for byte, gets a copy of those bytes instead.  The copy is what
+// the build would return (checked: the 144 repeats of the 16-, 24- and
+// 32-player level 12 sessions, x64 and x86, equal byte for byte), so nothing
+// the physics computes changes; the hash only picks the bucket.  A surface with
+// concave meshes is left to the build: its inputs would include the faces, and
+// the repeated builds are all convex.
+struct PhysicsSurfaceMemo
+{
+    struct Entry
+    {
+        std::vector<unsigned char> inputs;
+        std::vector<unsigned char> bytes;
+    };
+    std::unordered_map<unsigned long long, Entry> entries;
+
+    static void Inputs(std::vector<unsigned char> &out, const VxVector &scale, int convexCount, CKMesh **convexes)
+    {
+        const unsigned char *b = (const unsigned char *)&scale;
+        out.assign(b, b + sizeof(scale));
+        for (int i = 0; i < convexCount; ++i)
+        {
+            const int count = convexes[i] ? convexes[i]->GetVertexCount() : -1;
+            b = (const unsigned char *)&count;
+            out.insert(out.end(), b, b + sizeof(count));
+            CKDWORD stride = 0;
+            const CKBYTE *pos = count > 0 ? (const CKBYTE *)convexes[i]->GetPositionsPtr(&stride) : NULL;
+            for (int v = 0; v < count; ++v, pos += stride)
+                out.insert(out.end(), pos, pos + sizeof(VxVector));
+        }
+    }
+
+    static unsigned long long Hash(const std::vector<unsigned char> &inputs)
+    {
+        unsigned long long h = 1469598103934665603ull;
+        for (size_t i = 0; i < inputs.size(); ++i)
+            h = (h ^ inputs[i]) * 1099511628211ull;
+        return h;
+    }
+
+    // A fresh copy of the surface built from these inputs, or null.
+    IVP_Compact_Surface *Find(const std::vector<unsigned char> &inputs) const
+    {
+        const std::unordered_map<unsigned long long, Entry>::const_iterator it = entries.find(Hash(inputs));
+        if (it == entries.end() || it->second.inputs != inputs)
+            return NULL;
+        const std::vector<unsigned char> &bytes = it->second.bytes;
+        IVP_Compact_Surface *surface = (IVP_Compact_Surface *)ivp_malloc_aligned(bytes.size(), 16);
+        if (surface)
+            memcpy(surface, &bytes[0], bytes.size());
+        return surface;
+    }
+
+    void Remember(const std::vector<unsigned char> &inputs, const IVP_Compact_Surface *surface)
+    {
+        Entry &entry = entries[Hash(inputs)];
+        if (!entry.inputs.empty())
+            return; // another inputs' bucket (a hash collision): that one stays
+        const unsigned char *b = (const unsigned char *)surface;
+        entry.inputs = inputs;
+        entry.bytes.assign(b, b + surface->get_size());
+    }
+};
 
 class PhysicsObjectListener : public IVP_Listener_Object
 {
@@ -266,6 +342,7 @@ CKIpionManager::CKIpionManager(CKContext *context)
         context->OutputToConsole("Manager already exists", TRUE);
 
     m_CollisionSurfaces = NULL;
+    m_SurfaceMemo = NULL;
     m_CollDetectionIDAttribType = -1;
 }
 
@@ -544,47 +621,69 @@ int CKIpionManager::CreatePhysicsObjectOnParameters(CK3dEntity *target, int conv
         IVP_SurfaceManager *surman = GetCollisionSurface(collisionSurface);
         if (!surman)
         {
-            IVP_SurfaceBuilder_Ledge_Soup builder;
-            int ledgeCount = 0;
-
-            if (convexCount > 0)
+            // BMMO (engine change #24): a convex-only surface already built from
+            // the same inputs is copied, not built again.
+            const bool memo = convexCount > 0 && concaveCount <= 0;
+            std::vector<unsigned char> inputs;
+            IVP_Compact_Surface *compactSurface = NULL;
+            if (memo)
             {
-                for (int i = 0; i < convexCount; i++)
+                PhysicsSurfaceMemo::Inputs(inputs, scale, convexCount, convexes);
+                if (m_SurfaceMemo)
+                    compactSurface = m_SurfaceMemo->Find(inputs);
+            }
+
+            if (!compactSurface)
+            {
+                IVP_SurfaceBuilder_Ledge_Soup builder;
+                int ledgeCount = 0;
+
+                if (convexCount > 0)
                 {
-                    if (convexes[i])
+                    for (int i = 0; i < convexCount; i++)
                     {
-                        ledgeCount += AddConvexSurface(&builder, convexes[i], &scale);
+                        if (convexes[i])
+                        {
+                            ledgeCount += AddConvexSurface(&builder, convexes[i], &scale);
+                        }
                     }
                 }
-            }
 
-            if (concaveCount > 0)
-            {
-                for (int i = 0; i < concaveCount; i++)
+                if (concaveCount > 0)
                 {
-                    if (concaves[i])
+                    for (int i = 0; i < concaveCount; i++)
                     {
-                        AddConcaveSurface(&builder, concaves[i], &scale);
-                        ++ledgeCount;
+                        if (concaves[i])
+                        {
+                            AddConcaveSurface(&builder, concaves[i], &scale);
+                            ++ledgeCount;
+                        }
                     }
                 }
-            }
 
-            if (ledgeCount != 0)
-            {
-                IVP_Compact_Surface *compactSurface = builder.compile();
-                if (compactSurface)
+                if (ledgeCount != 0)
                 {
-                    surman = new IVP_SurfaceManager_Polygon(compactSurface);
-                    if (surman)
-                        AddCollisionSurface(collisionSurface, surman, compactSurface);
-                    else
-                        ivp_free_aligned(compactSurface);
+                    compactSurface = builder.compile();
+                    if (compactSurface && memo)
+                    {
+                        if (!m_SurfaceMemo)
+                            m_SurfaceMemo = new PhysicsSurfaceMemo;
+                        m_SurfaceMemo->Remember(inputs, compactSurface);
+                    }
+                }
+                else
+                {
+                    m_Context->OutputToConsoleEx("Error: incorrect mesh for %s !\n", target->GetName());
                 }
             }
-            else
+
+            if (compactSurface)
             {
-                m_Context->OutputToConsoleEx("Error: incorrect mesh for %s !\n", target->GetName());
+                surman = new IVP_SurfaceManager_Polygon(compactSurface);
+                if (surman)
+                    AddCollisionSurface(collisionSurface, surman, compactSurface);
+                else
+                    ivp_free_aligned(compactSurface);
             }
         }
 
@@ -993,6 +1092,8 @@ void CKIpionManager::DeleteCollisionSurfaces()
 
     delete m_CollisionSurfaces;
     m_CollisionSurfaces = NULL;
+    delete m_SurfaceMemo;
+    m_SurfaceMemo = NULL;
 }
 
 void CKIpionManager::DeletePrivateCollisionSurface(CK_ID owner)

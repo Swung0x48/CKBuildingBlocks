@@ -36,6 +36,7 @@
 
 class PhysicsObjectListener;
 class PhysicsCollisionListener;
+struct PhysicsSurfaceMemo;
 
 class PhysicsCollisionSurface
 {
@@ -330,6 +331,12 @@ public:
     void (*m_ForceObserver)(IVP_Real_Object *object, const IVP_U_Point *force_ws, const IVP_U_Point *pos_cs, int deferred);
     // > 0 while PhysicsCallbackContainer::Process() runs the queued callbacks.
     int m_ProcessingQueuedCallbacks;
+
+    // BMMO (engine change #24): the convex-only collision surfaces built so
+    // far, by their inputs.  A named surface that misses the name cache but
+    // has the inputs of one already built is copied instead of built again.
+    // Freed with the named surfaces (DeleteCollisionSurfaces).
+    PhysicsSurfaceMemo *m_SurfaceMemo;
 
     // Whether the body guard covers this entity's body: the guard is on, the
     // entity is neither the player's ball nor one of the exempt entities.
