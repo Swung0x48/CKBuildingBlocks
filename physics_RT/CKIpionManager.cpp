@@ -155,13 +155,18 @@ struct PhysicsSurfaceMemo
         return h;
     }
 
+    bool Has(const std::vector<unsigned char> &inputs) const
+    {
+        const std::unordered_map<unsigned long long, Entry>::const_iterator it = entries.find(Hash(inputs));
+        return it != entries.end() && it->second.inputs == inputs;
+    }
+
     // A fresh copy of the surface built from these inputs, or null.
     IVP_Compact_Surface *Find(const std::vector<unsigned char> &inputs) const
     {
-        const std::unordered_map<unsigned long long, Entry>::const_iterator it = entries.find(Hash(inputs));
-        if (it == entries.end() || it->second.inputs != inputs)
+        if (!Has(inputs))
             return NULL;
-        const std::vector<unsigned char> &bytes = it->second.bytes;
+        const std::vector<unsigned char> &bytes = entries.find(Hash(inputs))->second.bytes;
         IVP_Compact_Surface *surface = (IVP_Compact_Surface *)ivp_malloc_aligned(bytes.size(), 16);
         if (surface)
             memcpy(surface, &bytes[0], bytes.size());
@@ -635,45 +640,12 @@ int CKIpionManager::CreatePhysicsObjectOnParameters(CK3dEntity *target, int conv
 
             if (!compactSurface)
             {
-                IVP_SurfaceBuilder_Ledge_Soup builder;
-                int ledgeCount = 0;
-
-                if (convexCount > 0)
+                compactSurface = BuildCollisionSurface(target, convexCount, convexes, concaveCount, concaves, scale);
+                if (compactSurface && memo)
                 {
-                    for (int i = 0; i < convexCount; i++)
-                    {
-                        if (convexes[i])
-                        {
-                            ledgeCount += AddConvexSurface(&builder, convexes[i], &scale);
-                        }
-                    }
-                }
-
-                if (concaveCount > 0)
-                {
-                    for (int i = 0; i < concaveCount; i++)
-                    {
-                        if (concaves[i])
-                        {
-                            AddConcaveSurface(&builder, concaves[i], &scale);
-                            ++ledgeCount;
-                        }
-                    }
-                }
-
-                if (ledgeCount != 0)
-                {
-                    compactSurface = builder.compile();
-                    if (compactSurface && memo)
-                    {
-                        if (!m_SurfaceMemo)
-                            m_SurfaceMemo = new PhysicsSurfaceMemo;
-                        m_SurfaceMemo->Remember(inputs, compactSurface);
-                    }
-                }
-                else
-                {
-                    m_Context->OutputToConsoleEx("Error: incorrect mesh for %s !\n", target->GetName());
+                    if (!m_SurfaceMemo)
+                        m_SurfaceMemo = new PhysicsSurfaceMemo;
+                    m_SurfaceMemo->Remember(inputs, compactSurface);
                 }
             }
 
@@ -707,6 +679,72 @@ int CKIpionManager::CreatePhysicsObjectOnParameters(CK3dEntity *target, int conv
     m_PhysicsObjects.Insert(target->GetID(), po);
 
     return CK_OK;
+}
+
+IVP_Compact_Surface *CKIpionManager::BuildCollisionSurface(CK3dEntity *target, int convexCount, CKMesh **convexes,
+                                                           int concaveCount, CKMesh **concaves, VxVector &scale)
+{
+    IVP_SurfaceBuilder_Ledge_Soup builder;
+    int ledgeCount = 0;
+
+    if (convexCount > 0)
+    {
+        for (int i = 0; i < convexCount; i++)
+        {
+            if (convexes[i])
+            {
+                ledgeCount += AddConvexSurface(&builder, convexes[i], &scale);
+            }
+        }
+    }
+
+    if (concaveCount > 0)
+    {
+        for (int i = 0; i < concaveCount; i++)
+        {
+            if (concaves[i])
+            {
+                AddConcaveSurface(&builder, concaves[i], &scale);
+                ++ledgeCount;
+            }
+        }
+    }
+
+    if (ledgeCount == 0)
+    {
+        m_Context->OutputToConsoleEx("Error: incorrect mesh for %s !\n", target->GetName());
+        return NULL;
+    }
+    return builder.compile();
+}
+
+// BMMO (engine change #24, step A2): the convex-only surface
+// CreatePhysicsObjectOnParameters would compile for `target` and these meshes
+// now (its scale as it stands), compiled into the memo only - no name, no
+// body.  A caller that knows which surfaces a later Physicalize will want
+// (the trafo explosion's pieces, at their set's registration) pays the build
+// there instead of in the explosion's tick.  1 compiled, 0 in the memo
+// already, -1 nothing to compile.
+int CKIpionManager::RememberConvexSurface(CK3dEntity *target, int convexCount, CKMesh **convexes)
+{
+    if (!target || convexCount <= 0 || !convexes)
+        return -1;
+
+    VxVector scale;
+    PhysicsScaleFromMatrix(target->GetLocalMatrix(), scale);
+    std::vector<unsigned char> inputs;
+    PhysicsSurfaceMemo::Inputs(inputs, scale, convexCount, convexes);
+    if (m_SurfaceMemo && m_SurfaceMemo->Has(inputs))
+        return 0;
+
+    IVP_Compact_Surface *compactSurface = BuildCollisionSurface(target, convexCount, convexes, 0, NULL, scale);
+    if (!compactSurface)
+        return -1;
+    if (!m_SurfaceMemo)
+        m_SurfaceMemo = new PhysicsSurfaceMemo;
+    m_SurfaceMemo->Remember(inputs, compactSurface);
+    ivp_free_aligned(compactSurface);
+    return 1;
 }
 
 IVP_Polygon *CKIpionManager::CreatePhysicsMultiBall(CKSTRING name, float mass, int ballCount,
