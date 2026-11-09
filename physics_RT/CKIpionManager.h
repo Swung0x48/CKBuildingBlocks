@@ -236,6 +236,10 @@ public:
     // Physicalize compiles it again from the entity as it stands then.  The
     // surface is freed, so no live physics object may still use it.
     CKBOOL RemoveCollisionSurface(const char *name);
+    // BMMO (engine change #24, step A2): compile the convex-only surface a
+    // Physicalize of `target` with these meshes would want into the memo
+    // only (no name, no body).  1 compiled, 0 known already, -1 nothing.
+    int RememberConvexSurface(CK3dEntity *target, int convexCount, CKMesh **convexes);
 
     void DeleteCollisionSurfaces();
     void DeletePrivateCollisionSurface(CK_ID owner);
@@ -260,6 +264,8 @@ public:
                                  IVP_U_Matrix *massCenterMatrix, VxVector *shiftMassCenter);
 
     static int AddConvexSurface(IVP_SurfaceBuilder_Ledge_Soup *builder, CKMesh *convex, VxVector *scale);
+    IVP_Compact_Surface *BuildCollisionSurface(CK3dEntity *target, int convexCount, CKMesh **convexes,
+                                               int concaveCount, CKMesh **concaves, VxVector &scale);
     static void AddConcaveSurface(IVP_SurfaceBuilder_Ledge_Soup *builder, CKMesh *concave, VxVector *scale);
     static int AddBallSurface(IVP_SurfaceBuilder_Ledge_Soup *builder, const VxVector &center,
                               float radius, VxVector *scale);
