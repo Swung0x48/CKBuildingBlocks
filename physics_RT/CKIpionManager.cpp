@@ -520,26 +520,32 @@ int CKIpionManager::GetPhysicsObjectCount() const
     return m_PhysicsObjects.Size();
 }
 
+static PhysicsObject *FindPhysicsObject(PhysicsObjectTable &objects, CKContext *context, CK3dEntity *entity, CKBOOL logging)
+{
+    PhysicsObjectTable::Iterator it = objects.Find(entity->GetID());
+    if (it == objects.End())
+    {
+        if (logging)
+            context->OutputToConsoleEx("You must Physicalize %s ...", entity->GetName());
+        return NULL;
+    }
+    return &*it;
+}
+
 PhysicsObject *CKIpionManager::GetPhysicsObject(CK3dEntity *entity, CKBOOL logging)
 {
     if (!entity)
         return NULL;
 
-    VxTimeProfiler profiler;
-
     ++m_HasPhysicsCalls;
 
-    PhysicsObject *obj = NULL;
-    PhysicsObjectTable::Iterator it = m_PhysicsObjects.Find(entity->GetID());
-    if (it == m_PhysicsObjects.End())
-    {
-        if (logging)
-            m_Context->OutputToConsoleEx("You must Physicalize %s ...", entity->GetName());
-    }
-    else
-    {
-        obj = &*it;
-    }
+    // The lookup's time is profiler output only (Get Profiler Values' HasPhysicsTime / DePhysicalizeTime), so the
+    // clock is read only while the context profiles; otherwise both times keep their values.
+    if (!m_Context->IsProfilingEnable())
+        return FindPhysicsObject(m_PhysicsObjects, m_Context, entity, logging);
+
+    VxTimeProfiler profiler;
+    PhysicsObject *obj = FindPhysicsObject(m_PhysicsObjects, m_Context, entity, logging);
 
     m_DePhysicalizeTime = profiler.Current();
     if (m_DePhysicalizeTime > m_HasPhysicsTime)
