@@ -258,12 +258,30 @@ int PhysicsForce(const CKBehaviorContext &behcontext)
 // The point and the force are the ones the controller was built with, in the
 // body's object space (see PhysicsForceCallback::Execute).  Called from the
 // physics bridge (BallanceMMOCommon/src/physics/physics_state.cpp).
+//
+// BallanceMMO engine change #27: a controller whose body was deleted
+// (core_is_going_to_be_deleted_event cleared m_Core; the block keeps the
+// pointer until its Shutdown) pushes nothing, so the state reports none and
+// the restore deletes it like any controller the record does not have; a
+// record that has one then makes it on the target's body.  A rollback that
+// remakes a body inside its window meets exactly that - the body deleted,
+// the block not yet shut down - and before this the restore only rewrote the
+// orphan's point and force, so the remade body ran the replayed ticks
+// without its push.  The savestate restore that follows puts the core's and
+// the unit's controller order back.  An orphan and no controller differ only
+// for a Create arriving before the Shutdown, a no-op on an orphan: a replay
+// from an anchor that recorded an orphan as none, with that Create inside
+// the window, pushes where the live world did not (accepted; the force
+// scripts checked alternate the two edges: P_Modul_18's TurnON / TurnOFF
+// permissions, P_Modul_26's Sequencer).
 extern "C" int BmmoPhysicsForceBlockState(CKBehavior *beh, int *exists, double pos[3], double force[3])
 {
     if (!beh || !exists || !pos || !force)
         return 0;
     PhysicsControllerForce *controller = NULL;
     beh->GetLocalParameterValue(0, &controller);
+    if (controller && !controller->m_Core)
+        controller = NULL;
     *exists = controller ? 1 : 0;
     for (int k = 0; k < 3; ++k)
     {
@@ -279,16 +297,14 @@ extern "C" int BmmoPhysicsForceBlockRestore(CKBehavior *beh, int exists, const d
         return 0;
     PhysicsControllerForce *controller = NULL;
     beh->GetLocalParameterValue(0, &controller);
-    if (!exists)
+    if (controller && (!exists || !controller->m_Core))
     {
-        if (controller)
-        {
-            delete controller;
-            controller = NULL;
-            beh->SetLocalParameterValue(0, &controller);
-        }
-        return 1;
+        delete controller;
+        controller = NULL;
+        beh->SetLocalParameterValue(0, &controller);
     }
+    if (!exists)
+        return 1;
     if (controller)
     {
         controller->m_Position.set(pos[0], pos[1], pos[2]);
