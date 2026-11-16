@@ -10,6 +10,9 @@
 
 CKObjectDeclaration *FillBehaviorSetDynamicPositionDecl();
 CKERROR CreateSetDynamicPositionProto(CKBehaviorPrototype **pproto);
+#if defined(VX_X87_GAME)
+#include <ivu_x87.hxx>
+#endif
 int SetDynamicPosition(const CKBehaviorContext &behcontext);
 
 CKObjectDeclaration *FillBehaviorSetDynamicPositionDecl()
@@ -148,6 +151,24 @@ int SetDynamicPosition(const CKBehaviorContext &behcontext)
     float maxDistance2Target;
     beh->GetInputParameterValue(11, &maxDistance2Target);
 
+#if defined(VX_X87_GAME)
+    {   // BallanceMMO x87-soft headless engine: TT_Toolbox_RT.dll (2002) 0x10004A80 as its x87 code runs it: DeltaTime * 0.001f stays in the registers,
+        // each force times it is stored to a float, each new coordinate ((p - offset) * force + delta * damping) + t
+        // is summed in the registers and stored once (the game thread's precision).
+        IVP_X87_Arithmetic x(IVP_X87_Control::current());
+        const IVP_U_Float80 cof = x.multiply(x.load(behcontext.DeltaTime), x.load(0.001f));
+        forceX = x.store_float(x.multiply(cof, x.load(forceX)));
+        forceY = x.store_float(x.multiply(cof, x.load(forceY)));
+        forceZ = x.store_float(x.multiply(cof, x.load(forceZ)));
+        auto step = [&](float t, float p, float off, float f, float d, float damp) {
+            return x.store_float(x.add(x.add(x.multiply(x.subtract(x.load(p), x.load(off)), x.load(f)),
+                                              x.multiply(x.load(d), x.load(damp))), x.load(t)));
+        };
+        targetPosition.x = step(targetPosition.x, position.x, offsetX, forceX, delta.x, dampingX);
+        targetPosition.y = step(targetPosition.y, position.y, offsetY, forceY, delta.y, dampingY);
+        targetPosition.z = step(targetPosition.z, position.z, offsetZ, forceZ, delta.z, dampingZ);
+    }
+#else
     float cof = behcontext.DeltaTime * 0.001f;
     forceX *= cof;
     forceY *= cof;
@@ -156,6 +177,7 @@ int SetDynamicPosition(const CKBehaviorContext &behcontext)
     targetPosition.x += (position.x - offsetX) * forceX + delta.x * dampingX;
     targetPosition.y += (position.y - offsetY) * forceY + delta.y * dampingY;
     targetPosition.z += (position.z - offsetZ) * forceZ + delta.z * dampingZ;
+#endif
 
     objectPosition -= targetPosition;
 

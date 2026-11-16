@@ -926,6 +926,17 @@ IVP_Polygon *CKIpionManager::CreatePhysicsPolygon(CKSTRING name, float mass, IVP
     return polygon;
 }
 
+#if defined(IVP_PORTABLE_BMMO) && defined(VX_X87_GAME)
+// The headless engine's ball-pair key outside a session (IVP_Environment::bmmo_ball_order_key): the CK object id.  Ids
+// follow creation order, which is the retail heap's address order wherever the 2002 game itself orders a pair alike from
+// run to run, and they do not change between runs (the addresses do: a headless SR01 TAS reversed Ball_Wood /
+// P_Ball_Wood_MF at t = 55.9 s in 2 of 20 runs).  The Player.exe DLL keeps the 2002 address order.
+static unsigned int BmmoBallOrderKey(void *client_data)
+{
+    return client_data ? (unsigned int) ((CK3dEntity *) client_data)->GetID() : 0u;
+}
+#endif
+
 void CKIpionManager::CreateEnvironment()
 {
 	if (m_Environment)
@@ -951,6 +962,9 @@ void CKIpionManager::CreateEnvironment()
     m_Environment->set_gravity(&gravity);
 #ifdef IVP_PORTABLE_BMMO
     m_Environment->bmmo_physics = m_BmmoPhysics ? IVP_TRUE : IVP_FALSE;
+#if defined(VX_X87_GAME)
+    m_Environment->bmmo_ball_order_key = BmmoBallOrderKey;
+#endif
 #endif
 
     m_PreSimulateCallbacks = new PhysicsCallbackContainer(this);
@@ -1109,8 +1123,21 @@ void CKIpionManager::SetSimulationTimeStep(float step)
 
 void CKIpionManager::SetDeltaTime(float delta)
 {
+#if defined(IVP_X87_ARITHMETIC) && IVP_X87_ARITHMETIC != 0
+    // The 2002 DLL (PostProcess, 0x10007CEF) at the game thread's precision: (delta + m * 3.0f) * 0.25f stays in the
+    // registers, is stored as the new smoothed delta, and the unrounded value times the time factor is stored as the
+    // physics step.  The float formula below rounded m * 3 and the sum and multiplied the rounded delta: equal while the
+    // frame time is constant, different from the first frame after it changes (a TAS handing over from 264 to 132
+    // frames/s left the 2002 run 6 frames later, in Player.exe as in the headless engine).
+    IVP_X87_Arithmetic x87(IVP_X87_Control::current());
+    const IVP_U_Float80 smoothed = x87.multiply(x87.add(x87.load(delta), x87.multiply(x87.load(m_DeltaTime), x87.load(3.0f))),
+                                                x87.load(0.25f));
+    m_DeltaTime = x87.store_float(smoothed);
+    m_PhysicsDeltaTime = x87.store_float(x87.multiply(smoothed, x87.load(m_PhysicsTimeFactor)));
+#else
     m_DeltaTime = (m_DeltaTime * 3.0f + delta) / 4;
     m_PhysicsDeltaTime = m_DeltaTime * m_PhysicsTimeFactor;
+#endif
 }
 
 void CKIpionManager::SetTimeFactor(float factor)
